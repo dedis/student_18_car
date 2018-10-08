@@ -1,0 +1,42 @@
+syntax = "proto2";
+
+package eventlog;
+
+option java_package = "ch.epfl.dedis.proto";
+option java_outer_classname = "EventLogProto";
+
+// ***
+// These are the messages used in the API-calls
+// ***
+
+// SearchRequest includes all the search parameters (AND of all provided search
+// parameters). Topic == "" means "any topic". From == 0 means "from the first
+// event", and To == 0 means "until now". From and To should be set using the
+// UnixNano() method in package time.
+message SearchRequest {
+  required bytes instance = 1;
+  required bytes id = 2;
+  // Return events where Event.Topic == Topic, if Topic != "".
+  required string topic = 3;
+  // Return events where When is > From.
+  required sint64 from = 4;
+  // Return events where When is <= To.
+  required sint64 to = 5;
+}
+
+// SearchResponse is the reply to LogRequest.
+message SearchResponse {
+  repeated Event events = 1;
+  // Events does not contain all the results. The caller should formulate
+  // a new SearchRequest to continue searching, for instance by setting
+  // From to the time of the last received event.
+  required bool truncated = 2;
+}
+
+// Event is sent to create an event log. When should be set using the UnixNano() method
+// in package time.
+message Event {
+  required sint64 when = 1;
+  required string topic = 2;
+  required string content = 3;
+}

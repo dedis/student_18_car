@@ -1,47 +1,57 @@
-Navigation: [DEDIS](https://github.com/dedis/doc/tree/master/README.md) ::
-[Cothority](../README.md) ::
-Conode
-
 # Conode
 
-A Conode is a Collective Authority Node and is a server in the cothority.
-Conodes are linked together to form a cothority. They are able to run
-decentralized protocols, and to offer services to clients.
+This package implements the cothority server. Conodes are linked together to form cothorities, run decentralized protocols, and offer services to clients.
 
-The conode in this repository includes all protocols and services and can
-be run either for local tests or on a public server. The currently running
-conodes are available under http://status.dedis.ch.
+## Getting Started
 
-You can run the conode either using the binary, the `run_conode.sh`-script
-or with docker:
+To use the code of this package you need to:
 
-- Using [command line](CLI.md)
-- Using [Docker](Docker.md)
+-  Install [Golang](https://golang.org/doc/install)
+-  Optional: Set [`$GOPATH`](https://golang.org/doc/code.html#GOPATH) to point to your Go workspace directory 
+-  Add `$(go env GOPATH)/bin` to `$PATH` 
 
-## Operating a Conode
+## run_conode.sh
 
-Conode is the program that allows you to be part of a cothority. For the server you need:
+The simplest way of using the conode is through the `run_conode.sh`-script. You can
+run it either in local-mode for local testing, or in public-mode on a server
+with a public IP-address.
 
-- 24/7 availability
-- 512MB of RAM and 1GB of disk-space
-- a public IP-address and two consecutive, open ports
-- go1.9 or go1.10 installed and set up according to https://golang.org/doc/install
+### local mode
 
-You find further information about what is important when you operate a conode
-in the following document: [Operating a Conode](Operating.md).
+When running in local mode, `run_conode.sh` will create one directory for each
+node you ask it to run. It is best if you create a new directory and run
+the script from there:
 
-Once you have a conode up and running, you can inform us on dedis@epfl.ch and
-we will include your conode in the DEDIS-cothority.
-
-## Creating Your own Cothority
-
-For most of the apps you need at least 3 running nodes. Once you have them up
-and running, you will need a `roster.toml` that includes all the
-`public.toml`-files from your conodes:
-
-```
-cat ../*/conode_data/public.toml > roster.toml
+```bash
+cd ~
+mkdir myconodes
+$(go env GOPATH)/src/github.com/dedis/cothority_template/conode/run_conode.sh local 3
 ```
 
-You will find more details about the available apps on
-[Applications](https://github.com/dedis/cothority/tree/master/doc/Applications.md).
+This will create three nodes and configure them with default values, then run
+them in background. To check if they're running correctly, use:
+
+```bash
+$(go env GOPATH)/src/github.com/dedis/cothority_template/conode/run_conode.sh check
+```
+
+If you need some debugging information, you can add another argument to print
+few (1), reasonable (3) or lots (5) information:
+
+```bash
+$(go env GOPATH)/src/github.com/dedis/cothority_template/conode/run_conode.sh local 3 3
+```
+
+The file `public.toml` contains the definition of all nodes that are being run.
+
+### public mode
+
+If you have a public server and want to run a node on it, simply use:
+
+```bash
+$(go env GOPATH)/src/github.com/dedis/cothority_template/conode/run_conode.sh public
+```
+
+The first time this runs it will ask you a couple of questions and verify if
+the node is available from the internet. If you plan to run a node for a long
+time, be sure to contact us at dedis@epfl.ch!

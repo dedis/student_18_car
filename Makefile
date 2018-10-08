@@ -1,35 +1,44 @@
 all: test
 
-# gopkg fits all v1.1, v1.2, ... in v1
-PKG_STABLE = gopkg.in/dedis/cothority.v2
-include $(shell go env GOPATH)/src/github.com/dedis/Coding/bin/Makefile.base
-EXCLUDE_LINT = "should be.*UI|_test.go"
-
-# You can use `test_playground` to run any test or part of cothority
-# for more than once in Travis. Change `make test` in .travis.yml
-# to `make test_playground`.
-test_playground:
-	cd personhood; \
-	for a in $$( seq 100 ); do \
-		# if DEBUG_TIME=true go test -v -race > log.txt 2>&1; then \
-		if DEBUG_TIME=true go test -v -race > log.txt 2>&1; then \
-			echo Successfully ran \#$$a at $$(date); \
-		else \
-			echo Failed at $$(date); \
-			cat log.txt; \
-			exit 1; \
+test_fmt:
+	@echo Checking correct formatting of files
+	@{ \
+		files=$$( go fmt ./... ); \
+		if [ -n "$$files" ]; then \
+		echo "Files not properly formatted: $$files"; \
+		exit 1; \
 		fi; \
-	done;
+		if ! go vet ./...; then \
+		exit 1; \
+		fi \
+	}
 
-# Other targets are:
-# make create_stable
+test_lint:
+	@echo Checking linting of files
+	@{ \
+		go get -u github.com/golang/lint/golint; \
+		lintfiles=$$( golint ./... ); \
+		if [ -n "$$lintfiles" ]; then \
+		echo "Lint errors:"; \
+		echo "$$lintfiles"; \
+		exit 1; \
+		fi \
+	}
+
+test_verbose:
+	go test -v -race -short ./...
+
+# use test_verbose instead if you want to use this Makefile locally
+test_go:
+	go test -race -short ./...
+
+test: test_fmt test_lint test_go
 
 proto:
 	./proto.sh
 	make -C external
 
-
-docker:
+docker: conode/Dockerfile external/docker/Dockerfile
 	cd conode/; make docker_dev
 	cd external/docker/; make docker_test
 

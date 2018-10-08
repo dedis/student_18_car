@@ -5,8 +5,9 @@ BEGIN {
 	tr[ar"byte"]="bytes"
 	tr["abstract.Point"]="bytes"
 	tr["StateAction"]="int"
-	tr["byzcoin.InstanceID"]="bytes"
+	tr["SubID"]="bytes"
 	tr["Nonce"]="bytes"
+	tr["Version"]="sint32"
 	print "syntax = \"proto2\";"
 }
 
@@ -39,11 +40,6 @@ a == 3 && /^[[:blank:]]*[[:lower:]]/ { next }
 #   copy comments through
 a == 3 && /[[:blank:]]*\/\// { sub( "[[:blank:]]*//[[:blank:]]*", "" ); print "  //", $0; next }
 a == 3 && /\*/ { sub( "\\*", "", $2 )
-					print_field("optional", $2, $1, i)
-					i = i + 1
-					next
-				}
-a == 3 && /.*`protobuf:"opt"`/ {
 					print_field("optional", $2, $1, i)
 					i = i + 1
 					next

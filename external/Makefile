@@ -1,4 +1,4 @@
-all: do-java do-js
+all: do-java
 
 do-java:
 	@for i in proto/*.proto ; \
@@ -6,8 +6,3 @@ do-java:
 		echo $$i ; \
 		protoc -I=proto --java_out=java/src/main/java $$i ; \
 	done
-
-do-js:
-	cd js/cothority; npm run protobuf
-
-

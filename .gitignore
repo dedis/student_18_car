@@ -1,0 +1,15 @@
+.idea/*
+.DS_Store
+workspace.xml
+profile.cov
+conode/conode
+conode/co[0-9]*/
+conode/public.toml
+status/status
+scmgr/scmgr
+cisc/cisc
+cosi/simulation/build/
+cosi/simulation/test_data/
+*~
+.tags*
+*/build/

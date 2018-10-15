@@ -17,7 +17,7 @@ func TestKeyValue_Spawn(t *testing.T) {
 	// Create a new ledger and prepare for proper closing
 	bct := newBCTest(t)
 	defer bct.Close()
-
+	t.Log(bct.gDarc.String())
 	// Create a new instance with two key/values:
 	//  "one": []byte{1}
 	//  "two": []byte{2}
@@ -188,7 +188,6 @@ func newBCTest(t *testing.T) (out *bcTest) {
 		[]string{"spawn:keyValue", "spawn:darc", "invoke:update"}, out.signer.Identity())
 	require.Nil(t, err)
 	out.gDarc = &out.gMsg.GenesisDarc
-
 	// This BlockInterval is good for testing, but in real world applications this
 	// should be more like 5 seconds.
 	out.gMsg.BlockInterval = time.Second / 2

@@ -18,3 +18,11 @@ type KeyValue struct {
 type KeyValueData struct {
 	Storage []KeyValue
 }
+
+type Car struct {
+	VIN   string
+}
+
+type CarData struct {
+	Storage []Car
+}

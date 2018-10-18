@@ -9,6 +9,8 @@ package byzcoin
 // KeyValue is created as a structure here, as go's map returns the
 // elements in a random order and as such is not suitable for use in a
 // system that needs to return always the same state.
+
+//For the Car contract Key will be the VIN, and value the car struct
 type KeyValue struct {
 	Key   string
 	Value []byte
@@ -20,9 +22,11 @@ type KeyValueData struct {
 }
 
 type Car struct {
-	VIN   string
+	VIN string
 }
 
-type CarData struct {
-	Storage []Car
+type CarReport struct {
+	Mileage string
+	Score string
+	Warranty bool
 }

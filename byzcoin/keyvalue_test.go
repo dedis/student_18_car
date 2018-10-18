@@ -216,7 +216,9 @@ func (bct *bcTest) createInstance(t *testing.T, args byzcoin.Arguments) byzcoin.
 	}
 	// And we need to sign the instruction with the signer that has his
 	// public key stored in the darc.
-	require.Nil(t, ctx.Instructions[0].SignBy(bct.gDarc.GetBaseID(), bct.signer))
+	invalid_s := darc.NewSignerEd25519(nil, nil)
+	require.Nil(t, ctx.Instructions[0].SignBy(bct.gDarc.GetBaseID(), invalid_s))
+	//require.Nil(t, ctx.Instructions[0].SignBy(bct.gDarc.GetBaseID(), bct.signer))
 
 	// Sending this transaction to ByzCoin does not directly include it in the
 	// global state - first we must wait for the new block to be created.

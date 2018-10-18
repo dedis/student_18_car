@@ -21,7 +21,8 @@ var ContractKeyValueID = "keyValue"
 // It can spawn new keyValue instances and will store all the arguments in
 // the data field.
 // Existing keyValue instances can be "update"d and deleted.
-func ContractKeyValue(cdb byzcoin.CollectionView, inst byzcoin.Instruction, cIn []byzcoin.Coin) (scs []byzcoin.StateChange, cOut []byzcoin.Coin, err error) {
+func ContractKeyValue(cdb byzcoin.CollectionView, inst byzcoin.Instruction,
+	cIn []byzcoin.Coin) (scs []byzcoin.StateChange, cOut []byzcoin.Coin, err error) {
 	cOut = cIn
 
 	err = inst.VerifyDarcSignature(cdb)

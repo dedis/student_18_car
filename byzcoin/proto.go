@@ -1,5 +1,11 @@
 package byzcoin
 
+import(
+	"github.com/dedis/cothority/byzcoin"
+	"time"
+)
+
+
 // PROTOSTART
 // package keyvalue;
 //
@@ -21,12 +27,19 @@ type KeyValueData struct {
 	Storage []KeyValue
 }
 
-type Car struct {
-	VIN string
+type Report struct {
+	Date time.Time
+	GarageId string
+	WriteInstanceID byzcoin.InstanceID
 }
 
-type CarReport struct {
+type Car struct {
+	VIN string
+	Reports []Report
+}
+
+type WriteData struct {
+	ECOScore string
 	Mileage string
-	Score string
 	Warranty bool
 }

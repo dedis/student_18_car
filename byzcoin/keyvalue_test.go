@@ -17,7 +17,7 @@ func TestKeyValue_Spawn(t *testing.T) {
 	// Create a new ledger and prepare for proper closing
 	bct := newBCTest(t)
 	defer bct.Close()
-	t.Log(bct.gDarc.String())
+
 	// Create a new instance with two key/values:
 	//  "one": []byte{1}
 	//  "two": []byte{2}
@@ -37,6 +37,10 @@ func TestKeyValue_Spawn(t *testing.T) {
 	// Wait for the proof to be available.
 	pr, err := bct.cl.WaitProof(instID, bct.gMsg.BlockInterval, nil)
 	require.Nil(t, err)
+
+	//_, err = bct.cl.AddTransactionAndWait(ctx, 5)
+	//require.Nil(t, err)
+
 	// Make sure the proof is a matching proof and not a proof of absence.
 	require.True(t, pr.InclusionProof.Match())
 
@@ -216,8 +220,7 @@ func (bct *bcTest) createInstance(t *testing.T, args byzcoin.Arguments) byzcoin.
 	}
 	// And we need to sign the instruction with the signer that has his
 	// public key stored in the darc.
-	invalid_s := darc.NewSignerEd25519(nil, nil)
-	require.Nil(t, ctx.Instructions[0].SignBy(bct.gDarc.GetBaseID(), invalid_s))
+	require.Nil(t, ctx.Instructions[0].SignBy(bct.gDarc.GetBaseID(), bct.signer))
 	//require.Nil(t, ctx.Instructions[0].SignBy(bct.gDarc.GetBaseID(), bct.signer))
 
 	// Sending this transaction to ByzCoin does not directly include it in the

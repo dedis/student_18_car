@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/dedis/cothority/byzcoin"
 	"github.com/dedis/cothority/darc"
+	"github.com/dedis/protobuf"
 )
 
 
@@ -39,8 +40,10 @@ func ContractCar(cdb byzcoin.CollectionView, inst byzcoin.Instruction,
 			return nil, nil, errors.New("need a car argument")
 		}
 
+		instID := inst.DeriveID("")
+
 		scs = []byzcoin.StateChange{
-			byzcoin.NewStateChange(byzcoin.Create, byzcoin.NewInstanceID(inst.Hash()),
+			byzcoin.NewStateChange(byzcoin.Create, instID,
 				inst.Spawn.ContractID, c, darcID),
 		}
 		return
@@ -49,42 +52,40 @@ func ContractCar(cdb byzcoin.CollectionView, inst byzcoin.Instruction,
 		if inst.Invoke.Command != "addReport" {
 			return nil, nil, errors.New("Value contract can only add Reports")
 		}
-
-		c := inst.Spawn.Args.Search("car")
-		if c == nil || len(c) == 0 {
-			return nil, nil, errors.New("need a car argument")
+		var carBuf []byte
+		carBuf, _, _, err = cdb.GetValues(inst.InstanceID.Slice())
+		car := Car{}
+		err = protobuf.Decode(carBuf, &car)
+		if err != nil {
+			return
 		}
-
+		err = car.Update(inst.Invoke.Args)
+		if err != nil {
+			return
+		}
+		carBuf, err = protobuf.Encode(&car)
+		if err != nil {
+			return
+		}
 		scs = []byzcoin.StateChange{
 			byzcoin.NewStateChange(byzcoin.Update, inst.InstanceID,
-				ContractCarID, c, darcID),
+				ContractCarID, carBuf, darcID),
 		}
+
 		return
 	default:
 		panic("should not get here")
 	}
 }
 
-// Update goes through all the arguments and:
-//  - updates the value if the key already exists
-//  - deletes the keyvalue if the value is empty
-//  - adds a new keyValue if the key does not exist yet
-/*func (cs *KeyValueData) Update(args byzcoin.Arguments) {
+func (car *Car) Update(args byzcoin.Arguments) error{
+	var report Report
+	var err error
 	for _, kv := range args {
-		var updated bool
-		for i, stored := range cs.Storage {
-			if stored.Key == kv.Name {
-				updated = true
-				if kv.Value == nil || len(kv.Value) == 0 {
-					cs.Storage = append(cs.Storage[0:i], cs.Storage[i+1:]...)
-					break
-				}
-				cs.Storage[i].Value = kv.Value
-			}
-
-		}
-		if !updated {
-			cs.Storage = append(cs.Storage, KeyValue{kv.Name, kv.Value})
+		if kv.Name == "report" {
+			err = protobuf.Decode(kv.Value, &report)
+			car.Reports = append(car.Reports, report)
 		}
 	}
-}*/
+	return err
+}

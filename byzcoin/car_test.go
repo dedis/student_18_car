@@ -8,6 +8,7 @@ import (
 	"github.com/dedis/protobuf"
 	"github.com/stretchr/testify/require"
 	"testing"
+	"time"
 )
 
 
@@ -17,9 +18,10 @@ func TestService_Car(t *testing.T) {
 
 
 
-func NewCar(VIN string) (car Car) {
-	c := Car{}
-	c.VIN = VIN
+func NewCar(VIN string) (Car) {
+	var c Car
+	c.Vin = VIN
+	c.Reports = []Report{}
 	return c
 }
 
@@ -48,48 +50,36 @@ func (s *ser) createCarInstance(t *testing.T, car Car,
 	require.Nil(t, ctx.Instructions[0].SignBy(d.GetBaseID(), signer))
 
 
+	// Sending this transaction to ByzCoin does not directly include it in the
+	// global state - first we must wait for the new block to be created.
 	_, err = s.cl.AddTransactionAndWait(ctx, 5)
 	require.Nil(t, err)
 
-	_, err = s.cl.GetProof(ctx.Instructions[0].InstanceID.Slice())
+
+	_, err = s.cl.GetProof(ctx.Instructions[0].DeriveID("").Slice())
+	//_, err = s.cl.GetProof(ctx.Instructions[0].InstanceID.Slice())
 	require.Nil(t, err)
 
-	// Sending this transaction to ByzCoin does not directly include it in the
-	// global state - first we must wait for the new block to be created.
-	//s.sendTx(t, ctx)
-
-	//wait for the proof for instance ID
-	//pr := s.waitProof(t, ctx.Instructions[0].InstanceID)
-	//require.True(t, pr.InclusionProof.Match())
-
 	return ctx.Instructions[0].DeriveID(""), err
+	//return ctx.Instructions[0].InstanceID, err
 }
 
 
-/*func (s *ser) addReport(t *testing.T, instID byzcoin.InstanceID,
-	controlDarc *darc.Darc, signer darc.Signer, wData WriteData) {
+func (s *ser) addReport(t *testing.T, instID byzcoin.InstanceID,
+	controlDarc *darc.Darc, wData WriteData, signerG darc.Signer, signerO darc.Signer) {
 
 	//creating a Calypso Write Instance
 	key1 := []byte("secret key 1")
 	_, wInstance := s.addWrite(t, key1, wData)
 
-	//getting the value from the instance
-	//resp, err := s.cl.GetProof(instID.Slice())
-	//require.Nil(t, err)
-	var car Car
-	//err = resp.Proof.ContractValue(cothority.Suite, ContractCarID, &car)
-	//require.Nil(t, err)
-
 	//creating new Report to be added in the list of the reports in the instance
 	var newReport Report
 	newReport.Date = time.Now()
 	newReport.WriteInstanceID = wInstance
-	newReport.GarageId = signer.Identity().String()
+	newReport.GarageId = signerG.Identity().String()
 
-	car.VIN = "12345"
-	car.Reports = append(car.Reports, newReport)
 
-	carBuf, err := protobuf.Encode(&car)
+	reportBuf, err := protobuf.Encode(&newReport)
 	require.Nil(t, err)
 
 	ctx := byzcoin.ClientTransaction{
@@ -100,32 +90,32 @@ func (s *ser) createCarInstance(t *testing.T, car Car,
 			Length:     1,
 			Invoke: &byzcoin.Invoke{
 				Command: "addReport",
-				Args:    byzcoin.Arguments{{Name: "car", Value: carBuf}},
+				Args:    byzcoin.Arguments{{Name: "report", Value: reportBuf}},
 			},
 		}},
 	}
 	// And we need to sign the instruction with the signer that has his
 	// public key stored in the darc.
-	require.Nil(t, ctx.Instructions[0].SignBy(controlDarc.GetBaseID(), signer))
+	require.Nil(t, ctx.Instructions[0].SignBy(controlDarc.GetBaseID(), signerG, signerO))
+	
+	_, err = s.cl.AddTransactionAndWait(ctx,5)
+	require.Nil(t, err)
 
-	//TODO error: Code:4000, Text:"transaction is in block, but got refused"
-	// Sending this transaction to ByzCoin does not directly include it in the
-	// global state - first we must wait for the new block to be created.
-	//_, err = s.cl.AddTransactionAndWait(ctx,5)
+	_, err = s.cl.GetProof(ctx.Instructions[0].InstanceID.Slice())
+	require.Nil(t, err)
+
+	//_, err = s.cl.AddTransaction(ctx)
 	//require.Nil(t, err)
-
-	_, err = s.cl.AddTransaction(ctx)
+	//_, err = s.cl.GetProof(instID.Slice())
 	require.Nil(t, err)
-	_, err = s.cl.GetProof(instID.Slice())
-	require.Nil(t, err)
-}*/
+}
 
 
 
 
 // TestService_DecryptKey is an end-to-end test that logs two write and read
 // requests and make sure that we can decrypt the secret afterwards.
-func TestService_CarDecryptKey(t *testing.T) {
+/*func TestService_CarDecryptKey(t *testing.T) {
 	s := newSer(t, testInterval)
 	defer s.local.CloseAll()
 
@@ -154,7 +144,7 @@ func TestService_CarDecryptKey(t *testing.T) {
 	keyCopy2, err := calypso.DecodeKey(cothority.Suite, s.ltsReply.X, dk2.Cs, dk2.XhatEnc, s.signer.Ed25519.Secret)
 	require.Nil(t, err)
 	require.Equal(t, key2, keyCopy2)
-}
+}*/
 
 func (s *ser) addRead(t *testing.T, write *byzcoin.Proof) *byzcoin.Proof {
 	var readBuf []byte
@@ -189,7 +179,7 @@ func (s *ser) addRead(t *testing.T, write *byzcoin.Proof) *byzcoin.Proof {
 	return &resp.Proof
 }
 
-/*func (s *ser) addWrite(t *testing.T, key []byte, wData WriteData) (*byzcoin.Proof, byzcoin.InstanceID) {
+func (s *ser) addWrite(t *testing.T, key []byte, wData WriteData) (*byzcoin.Proof, byzcoin.InstanceID) {
 	write := calypso.NewWrite(cothority.Suite, s.ltsReply.LTSID, s.gDarc.GetBaseID(), s.ltsReply.X, key)
 	var er error
 	write.Data, er = protobuf.Encode(&wData)
@@ -219,9 +209,9 @@ func (s *ser) addRead(t *testing.T, write *byzcoin.Proof) *byzcoin.Proof {
 	require.Nil(t, err)
 
 	return &resp.Proof, instID
-}*/
+}
 
-func (s *ser) addWrite(t *testing.T, key []byte) (*byzcoin.Proof) {
+/*func (s *ser) addWrite(t *testing.T, key []byte) (*byzcoin.Proof) {
 	write := calypso.NewWrite(cothority.Suite, s.ltsReply.LTSID, s.gDarc.GetBaseID(), s.ltsReply.X, key)
 	writeBuf, err := protobuf.Encode(write)
 	require.Nil(t, err)
@@ -248,4 +238,4 @@ func (s *ser) addWrite(t *testing.T, key []byte) (*byzcoin.Proof) {
 	require.Nil(t, err)
 
 	return &resp.Proof
-}
+}*/

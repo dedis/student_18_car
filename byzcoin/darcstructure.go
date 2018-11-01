@@ -17,20 +17,19 @@ var tSuite = suites.MustFind("Ed25519")
 
 // Spawn an Admin Darc from the Genesis Darc, giving the service as input
 //and returning the new darc together with the admin signer
-func (s *ser) createAdminDarc(t *testing.T)  (darc.Signer, *darc.Darc){
+func (s *ser) createAdminDarc(admin darc.Signer)  (*darc.Darc, error){
 	// Spawn Admin darc with a new owner/signer, but delegate its spawn
 	// rule to the first darc or the new owner/signer
-	admin := darc.NewSignerEd25519(nil, nil)
+	var err error
 	idAdmin := []darc.Identity{admin.Identity()}
 	darcAdmin := darc.NewDarc(darc.InitRules(idAdmin, idAdmin),
 		[]byte("Admin darc"))
 	darcAdmin.Rules.AddRule("spawn:darc", expression.InitOrExpr(s.gDarc.GetIdentityString(), admin.Identity().String()))
 	darcAdmin.Rules.AddRule("invoke:evolve", expression.InitOrExpr(s.gDarc.GetIdentityString(), admin.Identity().String()))
 	darcAdminBuf, err := darcAdmin.ToProto()
-	require.Nil(t, err)
-	darcAdminCopy, err := darc.NewFromProtobuf(darcAdminBuf)
-	require.Nil(t, err)
-	require.True(t, darcAdmin.Equal(darcAdminCopy))
+	if err != nil {
+		return nil, err
+	}
 	ctx := byzcoin.ClientTransaction{
 		Instructions: []byzcoin.Instruction{{
 			InstanceID: byzcoin.NewInstanceID(s.gDarc.GetBaseID()),
@@ -46,19 +45,21 @@ func (s *ser) createAdminDarc(t *testing.T)  (darc.Signer, *darc.Darc){
 			},
 		}},
 	}
-	require.Nil(t, ctx.Instructions[0].SignBy(s.gDarc.GetBaseID(), s.signer))
-
+	err = ctx.Instructions[0].SignBy(s.gDarc.GetBaseID(), s.signer)
+	if err != nil {
+		return nil, err
+	}
 	_, err = s.cl.AddTransactionAndWait(ctx, 5)
-	require.Nil(t, err)
+	if err != nil {
+		return nil, err
+	}
 
 	_, err = s.cl.GetProof(byzcoin.NewInstanceID(darcAdmin.GetBaseID()).Slice())
-	require.Nil(t, err)
+	if err != nil {
+		return nil, err
+	}
 
-
-	//s.sendTx(t, ctx)
-	//pr := s.waitProof(t, byzcoin.NewInstanceID(darcAdmin.GetBaseID()))
-	//require.True(t, pr.InclusionProof.Match())
-	return admin,darcAdmin
+	return darcAdmin, err
 }
 
 // Spawn an User Darc from the Admin Darc(input), giving the service and Admin Signer as input as well
@@ -155,7 +156,8 @@ func (s *ser) createReaderDarc(t *testing.T, darcAdmin *darc.Darc, admin darc.Si
 
 // Spawn a Reader Darc from the Admin Darc(input), giving the service and Admin Signer as input as well
 //and returning the new darc together with the user signer
-func (s *ser) createGarageDarc(t *testing.T, darcAdmin *darc.Darc, admin darc.Signer, userDarc *darc.Darc) (*darc.Darc) {
+func (s *ser) createGarageDarc(t *testing.T, darcAdmin *darc.Darc,
+	admin darc.Signer, userDarc *darc.Darc) (*darc.Darc) {
 
 	// Spawn Reader darc from the Admin one, but sign the request with
 	// the signer of the first darc to test delegation
@@ -165,6 +167,9 @@ func (s *ser) createGarageDarc(t *testing.T, darcAdmin *darc.Darc, admin darc.Si
 	if err := rs.AddRule("invoke:evolve", expression.InitAndExpr(userDarc.GetIdentityString())); err != nil {
 		panic("add rule should never fail on an empty rule list: " + err.Error())
 	}
+	//if err := rs.AddRule("_sign", expression.InitAndExpr(garage.Identity().String())); err != nil {
+	//	panic("add rule should never fail on an empty rule list: " + err.Error())
+
 	if err := rs.AddRule("_sign", expression.InitAndExpr(userDarc.GetIdentityString())); err != nil {
 		panic("add rule should never fail on an empty rule list: " + err.Error())
 	}

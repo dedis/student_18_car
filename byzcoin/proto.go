@@ -34,7 +34,7 @@ type Report struct {
 }
 
 type Car struct {
-	VIN string
+	Vin string
 	Reports []Report
 }
 

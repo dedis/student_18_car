@@ -31,10 +31,13 @@ func (s *ser) spawnAdminDarc(admin darc.Signer)  (*darc.Darc, error){
 	}
 
 	//creating a transaction with spawn:darc instruction
-	ctx := newSpawnDarcTransaction(s.gDarc, darcAdminBuf)
+	ctx, err := s.newSpawnDarcTransaction(s.gDarc, s.signer, darcAdminBuf)
+	if err != nil {
+		return nil, err
+	}
 
 	//Signing and sending a transaction to ByzCoin and waiting for it to be included in the ledger
-	_, err = s.signAndSendTransaction(ctx, s.signer, s.gDarc, byzcoin.NewInstanceID(darcAdmin.GetBaseID()).Slice())
+	_, err = s.signAndSendTransaction(ctx, s.signer, byzcoin.NewInstanceID(darcAdmin.GetBaseID()).Slice())
 	if err != nil {
 		return nil, err
 	}
@@ -57,10 +60,13 @@ func (s *ser) spawnUserDarc(darcAdmin *darc.Darc, admin darc.Signer, user darc.S
 		return nil, err
 	}
 
-	ctx := newSpawnDarcTransaction(darcAdmin, darcUserBuf)
+	ctx, err := s.newSpawnDarcTransaction(darcAdmin,  admin, darcUserBuf)
+	if err != nil {
+		return nil, err
+	}
 
 	//Signing and sending a transaction to ByzCoin and waiting for it to be included in the ledger
-	_, err = s.signAndSendTransaction(ctx, admin, darcAdmin, byzcoin.NewInstanceID(darcUser.GetBaseID()).Slice())
+	_, err = s.signAndSendTransaction(ctx, admin, byzcoin.NewInstanceID(darcUser.GetBaseID()).Slice())
 	if err != nil {
 		return nil, err
 	}
@@ -89,9 +95,12 @@ func (s *ser) spawnReaderDarc( darcAdmin *darc.Darc,
 		return nil, err
 	}
 
-	ctx := newSpawnDarcTransaction(darcAdmin, darcReaderBuf)
+	ctx, err := s.newSpawnDarcTransaction(darcAdmin, admin, darcReaderBuf)
+	if err != nil {
+		return nil, err
+	}
 
-	_, err = s.signAndSendTransaction(ctx, admin, darcAdmin, byzcoin.NewInstanceID(darcReader.GetBaseID()).Slice())
+	_, err = s.signAndSendTransaction(ctx, admin, byzcoin.NewInstanceID(darcReader.GetBaseID()).Slice())
 	if err != nil {
 		return nil, err
 	}
@@ -123,9 +132,12 @@ func (s *ser) spawnGarageDarc( darcAdmin *darc.Darc,
 		return nil, err
 	}
 
-	ctx := newSpawnDarcTransaction(darcAdmin, darcGarageBuf)
+	ctx, err := s.newSpawnDarcTransaction(darcAdmin, admin, darcGarageBuf)
+	if err != nil {
+		return nil, err
+	}
 
-	_, err = s.signAndSendTransaction(ctx, admin, darcAdmin, byzcoin.NewInstanceID(darcGarage.GetBaseID()).Slice())
+	_, err = s.signAndSendTransaction(ctx, admin, byzcoin.NewInstanceID(darcGarage.GetBaseID()).Slice())
 	if err != nil {
 		return nil, err
 	}
@@ -160,9 +172,12 @@ func (s *ser) spawnCarDarc( darcAdmin *darc.Darc, admin darc.Signer,
 		return nil, err
 	}
 
-	ctx := newSpawnDarcTransaction(darcAdmin, darcCarBuf)
+	ctx, err := s.newSpawnDarcTransaction(darcAdmin, admin,  darcCarBuf)
+	if err != nil {
+		return nil, err
+	}
 
-	_, err = s.signAndSendTransaction(ctx, admin, darcAdmin, byzcoin.NewInstanceID(darcCar.GetBaseID()).Slice())
+	_, err = s.signAndSendTransaction(ctx, admin, byzcoin.NewInstanceID(darcCar.GetBaseID()).Slice())
 
 	if err != nil {
 		return nil, err
@@ -196,14 +211,14 @@ func (s *ser) removeSigner(t *testing.T, d *darc.Darc,
 		return nil, err
 	}
 
-	if pr.InclusionProof.Match() != true {
+	if pr.InclusionProof.Match(d2.GetBaseID()) != true {
 		return nil, errors.New("absence of the key in the collection")
 	}
-	_, vs, err := pr.KeyValue()
+	_, vs, _, _, err := pr.KeyValue()
 	if err != nil {
 		return nil, err
 	}
-	d22, err := darc.NewFromProtobuf(vs[0])
+	d22, err := darc.NewFromProtobuf(vs)
 	if err != nil {
 		return nil, err
 	}
@@ -307,14 +322,14 @@ func (s *ser) addSigner(d *darc.Darc,
 		return nil, err
 	}
 
-	if pr.InclusionProof.Match() != true {
+	if pr.InclusionProof.Match(d2.GetBaseID()) != true {
 		return nil, errors.New("absence of the key in the collection")
 	}
-	_, vs, err := pr.KeyValue()
+	_, vs, _, _,  err := pr.KeyValue()
 	if err != nil {
 		return nil, err
 	}
-	d22, err := darc.NewFromProtobuf(vs[0])
+	d22, err := darc.NewFromProtobuf(vs)
 	if err != nil {
 		return nil, err
 	}
@@ -383,6 +398,9 @@ func removeSpace(str string) (string) {
 }
 
 func (s *ser) evolveDarc(d2 *darc.Darc, signer darc.Signer) (*byzcoin.Proof, error) {
+
+	ctr, err := s.cl.GetSignerCounters(signer.Identity().String())
+
 	d2Buf, err := d2.ToProto()
 	if err != nil {
 		return nil, err
@@ -398,15 +416,13 @@ func (s *ser) evolveDarc(d2 *darc.Darc, signer darc.Signer) (*byzcoin.Proof, err
 	}
 	instr := byzcoin.Instruction{
 		InstanceID: byzcoin.NewInstanceID(d2.GetBaseID()),
-		Nonce:      byzcoin.GenNonce(),
-		Index:      0,
-		Length:     1,
 		Invoke:     &invoke,
+		SignerCounter: []uint64{ctr.Counters[0]+1},
 	}
 	ctx := byzcoin.ClientTransaction{
 		Instructions: []byzcoin.Instruction{instr}}
 
-	pr,err := s.signAndSendTransaction(ctx, signer, d2, d2.GetBaseID())
+	pr,err := s.signAndSendTransaction(ctx, signer, d2.GetBaseID())
 	if err != nil {
 		return nil, err
 	}
@@ -414,14 +430,15 @@ func (s *ser) evolveDarc(d2 *darc.Darc, signer darc.Signer) (*byzcoin.Proof, err
 }
 
 //returns a transaction with spawn:darc instruction
-func newSpawnDarcTransaction(controlDarc *darc.Darc, newDarcBuf []byte) byzcoin.ClientTransaction{
+//TODO: SignerCounter: []uint64{ctr}
+func (s *ser)newSpawnDarcTransaction(controlDarc *darc.Darc, txnSigner darc.Signer,
+	newDarcBuf []byte) (byzcoin.ClientTransaction, error){
+
+	ctr, err := s.cl.GetSignerCounters(txnSigner.Identity().String())
 
 	ctx := byzcoin.ClientTransaction{
 		Instructions: []byzcoin.Instruction{{
 			InstanceID: byzcoin.NewInstanceID(controlDarc.GetBaseID()),
-			Nonce:      byzcoin.GenNonce(),
-			Index:      0,
-			Length:     1,
 			Spawn: &byzcoin.Spawn{
 				ContractID: byzcoin.ContractDarcID,
 				Args: []byzcoin.Argument{{
@@ -429,18 +446,20 @@ func newSpawnDarcTransaction(controlDarc *darc.Darc, newDarcBuf []byte) byzcoin.
 					Value: newDarcBuf,
 				}},
 			},
+			SignerCounter: []uint64{ctr.Counters[0]+1},
 		}},
 	}
-	return ctx
+	return ctx, err
 }
 
 //Signing and sending a transaction to ByzCoin and waiting for it to be included in the ledger
 func (s *ser)signAndSendTransaction(ctx byzcoin.ClientTransaction, txnSigner darc.Signer,
-	controlDarc *darc.Darc, instanceKey []byte) (*byzcoin.Proof, error) {
+	instanceKey []byte) (*byzcoin.Proof, error) {
 
 	// Sign the instruction with the signer that has his
 	// public key stored in the darc.
-	err := ctx.Instructions[0].SignBy(controlDarc.GetBaseID(), txnSigner)
+	ctx.InstructionsHash = ctx.Instructions.Hash()
+	err := ctx.Instructions[0].SignWith(ctx.InstructionsHash, txnSigner)
 	if err != nil {
 		return nil, err
 	}

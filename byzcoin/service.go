@@ -6,20 +6,12 @@ import (
 	"github.com/dedis/onet/log"
 )
 
-
-var ServiceName = "Calypso_Car"
 // This service is only used because we need to register our contracts to
 // the ByzCoin service. So we create this stub and add contracts to it
 // from the `contracts` directory.
 
-/*type vData struct {
-	Proof     byzcoin.Proof
-	Ephemeral kyber.Point
-	Signature *darc.Signature
-}*/
-
 func init() {
-	_, err := onet.RegisterNewService(ServiceName, newService)
+	_, err := onet.RegisterNewService("contracts", newService)
 	log.ErrFatal(err)
 }
 
@@ -35,6 +27,5 @@ func newService(c *onet.Context) (onet.Service, error) {
 		ServiceProcessor: onet.NewServiceProcessor(c),
 	}
 	byzcoin.RegisterContract(c, ContractCarID, ContractCar)
-	byzcoin.RegisterContract(c, ContractKeyValueID, ContractKeyValue)
 	return s, nil
 }

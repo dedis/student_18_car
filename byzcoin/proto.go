@@ -6,16 +6,6 @@ package byzcoin
 // option java_package = "ch.epfl.dedis.template.proto";
 // option java_outer_classname = "CarProto";
 
-type KeyValue struct {
-	Key   string
-	Value []byte
-}
-
-// KeyValueData is the structure that will hold all key/value pairs.
-type KeyValueData struct {
-	Storage []KeyValue
-}
-
 //todo Report.java
 type Report struct {
 	Date string

@@ -86,11 +86,11 @@ func TestService_DarcStructure(t *testing.T) {
 	require.Nil(t, err)
 	//key,_,err := resp.Proof.KeyValue()
 
-	_,values, err := resp.Proof.KeyValue()
+	_,value, _, _, err := resp.Proof.KeyValue()
 	require.Nil(t, err)
 
 	var carData Car
-	err = protobuf.Decode(values[0], &carData)
+	err = protobuf.Decode(value, &carData)
 	require.Nil(t, err)
 
 
@@ -110,23 +110,22 @@ func TestService_DarcStructure(t *testing.T) {
 
 	resp, err = s.cl.GetProof(cInstance.Slice())
 	require.Nil(t, err)
-	//key,_,err := resp.Proof.KeyValue()
 
-	_,values, err = resp.Proof.KeyValue()
+	_,value, _, _, err = resp.Proof.KeyValue()
 	require.Nil(t, err)
 
 	var carData2 Car
-	err = protobuf.Decode(values[0], &carData2)
+	err = protobuf.Decode(value, &carData2)
 	require.Nil(t, err)
 
 	t.Log("Car Instance Report")
 	t.Log(carData2.Reports)
 
 
-	secrets, err := s.readReports(cInstance, darcCar, newReader, user)
+	/*secrets, err := s.readReports(cInstance, darcCar, newReader, user)
 	require.Nil(t, err)
 
 	t.Log("Mileage")
-	t.Log(secrets[0].Mileage)
+	t.Log(secrets[0].Mileage)*/
 
 }

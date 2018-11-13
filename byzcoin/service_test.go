@@ -9,4 +9,3 @@ import (
 func TestMain(m *testing.M) {
 	log.MainTest(m)
 }
-

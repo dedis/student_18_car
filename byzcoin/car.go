@@ -15,7 +15,6 @@ import (
 	"time"
 )
 
-
 func NewCar(VIN string) (Car) {
 	var c Car
 	c.Vin = VIN
@@ -27,6 +26,7 @@ func NewCar(VIN string) (Car) {
 func (s *ser) createCarInstance(car Car,
 	controlDarc *darc.Darc, signer darc.Signer) (byzcoin.InstanceID, error) {
 
+	ctr, err := s.cl.GetSignerCounters(signer.Identity().String())
 	var instID byzcoin.InstanceID
 	carBuf, err := protobuf.Encode(&car)
 	if err != nil {
@@ -35,18 +35,16 @@ func (s *ser) createCarInstance(car Car,
 	ctx := byzcoin.ClientTransaction{
 		Instructions: []byzcoin.Instruction{{
 			InstanceID: byzcoin.NewInstanceID(controlDarc.GetBaseID()),
-			Nonce:      byzcoin.Nonce{},
-			Index:      0,
-			Length:     1,
 			Spawn: &byzcoin.Spawn{
 				ContractID: ContractCarID,
 				Args:       byzcoin.Arguments{{Name: "car", Value: carBuf}},
 			},
+			SignerCounter: []uint64{ctr.Counters[0]+1},
 		}},
 	}
 
 	// Sending this transaction to ByzCoin
-	_, err = s.signAndSendTransaction(ctx, signer, controlDarc, ctx.Instructions[0].DeriveID("").Slice())
+	_, err = s.signAndSendTransaction(ctx, signer, ctx.Instructions[0].DeriveID("").Slice())
 	if err != nil {
 		return instID, err
 	}
@@ -77,21 +75,22 @@ func (s *ser) addReport(instID byzcoin.InstanceID,
 		return err
 	}
 
+	ctrG, err := s.cl.GetSignerCounters(signerG.Identity().String())
+	ctrO, err := s.cl.GetSignerCounters(signerO.Identity().String())
+
 	ctx := byzcoin.ClientTransaction{
 		Instructions: []byzcoin.Instruction{{
 			InstanceID: instID,
-			Nonce:      byzcoin.Nonce{},
-			Index:      0,
-			Length:     1,
 			Invoke: &byzcoin.Invoke{
 				Command: "addReport",
 				Args:    byzcoin.Arguments{{Name: "report", Value: reportBuf}},
 			},
+			SignerCounter: []uint64{ctrG.Counters[0]+1, ctrO.Counters[0]+1},
 		}},
 	}
 	// And we need to sign the instruction with the signer that has his
 	// public key stored in the darc.
-	err = ctx.Instructions[0].SignBy(controlDarc.GetBaseID(), signerG, signerO)
+	err = ctx.SignWith(signerG, signerO)
 	if err != nil {
 		return err
 	}
@@ -119,12 +118,12 @@ func (s *ser) readReports(instID byzcoin.InstanceID,
 	if err != nil {
 		return secretsList, err
 	}
-	_,values, err := resp.Proof.KeyValue()
+	_,values, _, _, err := resp.Proof.KeyValue()
 	if err != nil {
 		return secretsList, err
 	}
 	var carData Car
-	err = protobuf.Decode(values[0], &carData)
+	err = protobuf.Decode(values, &carData)
 	if err != nil {
 		return secretsList, err
 	}
@@ -142,7 +141,7 @@ func (s *ser) readReports(instID byzcoin.InstanceID,
 
 			prWr:= resp.Proof
 			//add read instance
-			prRe, err := s.addRead(&prWr, controlDarc, signerR, signerO)
+			prRe, _, err := s.addRead(&prWr, controlDarc, signerR, signerO)
 
 			dk, err := s.servicesCal[0].DecryptKey(&calypso.DecryptKey{Read: *prRe, Write: prWr})
 			if err != nil {
@@ -151,7 +150,7 @@ func (s *ser) readReports(instID byzcoin.InstanceID,
 			if dk.X.Equal(s.ltsReply.X) != true {
 				return secretsList, errors.New("the points are not derived from the same group")
 			}
-			key, err := calypso.DecodeKey(cothority.Suite, s.ltsReply.X, dk.Cs, dk.XhatEnc, s.signer.Ed25519.Secret)
+			key, err := calypso.DecodeKey(cothority.Suite, s.ltsReply.X, dk.Cs, dk.XhatEnc, signerR.Ed25519.Secret)
 			if err != nil {
 				return secretsList, err
 			}
@@ -159,11 +158,20 @@ func (s *ser) readReports(instID byzcoin.InstanceID,
 
 			//getting the write structure from the proof
 			var write calypso.Write
-			err = prWr.ContractValue(cothority.Suite, calypso.ContractWriteID, &write)
+
+			//TODO ContractValue depricated, what's the new method?!?
+			//err = prWr.ContractValue(cothority.Suite, calypso.ContractWriteID, &write)
+			//if err != nil {
+			//	return secretsList, err
+			//}
+			_,value, _, _, err := prWr.KeyValue()
 			if err != nil {
 				return secretsList, err
 			}
-
+			err = protobuf.Decode(value, &write)
+			if err != nil {
+				return secretsList, err
+			}
 
 			//decrypting the secret and placing it in a SecretData structure
 			plainText, err := decrypt(write.Data, key)
@@ -183,48 +191,57 @@ func (s *ser) readReports(instID byzcoin.InstanceID,
 	return secretsList, err
 }
 
+
+//TODO: SignerCounter: []uint64{ctr}
+//TODO Xc only SignerR or signerO as well
 func (s *ser) addRead( write *byzcoin.Proof,
-	controlDarc *darc.Darc, signerR darc.Signer, signerO darc.Signer) (*byzcoin.Proof, error) {
+	controlDarc *darc.Darc, signerR darc.Signer, signerO darc.Signer) (*byzcoin.Proof, byzcoin.InstanceID, error) {
+
+	var instID byzcoin.InstanceID
 	var readBuf []byte
 	read := &calypso.Read{
-		Write: byzcoin.NewInstanceID(write.InclusionProof.Key),
-		Xc:    s.signer.Ed25519.Point,
+		Write: byzcoin.NewInstanceID(write.InclusionProof.Key()),
+		Xc:    signerR.Ed25519.Point,
 	}
 	var err error
 	readBuf, err = protobuf.Encode(read)
 	if err != nil {
-		return nil, err
+		return nil, instID, err
 	}
+
+	ctrR, err := s.cl.GetSignerCounters(signerR.Identity().String())
+	ctrO, err := s.cl.GetSignerCounters(signerO.Identity().String())
+
 	ctx := byzcoin.ClientTransaction{
 		Instructions: byzcoin.Instructions{{
-			InstanceID: byzcoin.NewInstanceID(write.InclusionProof.Key),
-			Nonce:      byzcoin.Nonce{},
-			Index:      0,
-			Length:     1,
+			InstanceID: byzcoin.NewInstanceID(write.InclusionProof.Key()),
 			Spawn: &byzcoin.Spawn{
 				ContractID: calypso.ContractReadID,
 				Args:       byzcoin.Arguments{{Name: "read", Value: readBuf}},
 			},
+			SignerCounter: []uint64{ctrR.Counters[0]+1, ctrO.Counters[0]+1},
 		}},
 	}
-	err = ctx.Instructions[0].SignBy(controlDarc.GetID(), signerR, signerO)
+	err = ctx.SignWith(signerR, signerO)
 	if err != nil {
-		return nil, err
+		return nil, instID, err
 	}
 
 	_, err = s.cl.AddTransactionAndWait(ctx, 5)
 	if err != nil {
-		return nil, err
+		return nil, instID, err
 	}
 
 	resp, err := s.cl.GetProof(ctx.Instructions[0].DeriveID("").Slice())
 	if err != nil {
-		return nil, err
+		return nil, instID, err
 	}
 
-	return &resp.Proof, err
+	return &resp.Proof, ctx.Instructions[0].DeriveID(""), err
 }
 
+
+//TODO: SignerCounter: []uint64{ctr}
 func (s *ser) addWrite(key []byte, wData SecretData,
 	controlDarc *darc.Darc, signerG darc.Signer, signerO darc.Signer) (*byzcoin.Proof, byzcoin.InstanceID, error) {
 
@@ -246,20 +263,21 @@ func (s *ser) addWrite(key []byte, wData SecretData,
 		return nil, instID, err
 	}
 
+	ctrG, err := s.cl.GetSignerCounters(signerG.Identity().String())
+	ctrO, err := s.cl.GetSignerCounters(signerO.Identity().String())
+
 	ctx := byzcoin.ClientTransaction{
 		Instructions: byzcoin.Instructions{{
 			InstanceID: byzcoin.NewInstanceID(controlDarc.GetBaseID()),
-			Nonce:      byzcoin.Nonce{},
-			Index:      0,
-			Length:     1,
 			Spawn: &byzcoin.Spawn{
 				ContractID: calypso.ContractWriteID,
 				Args:       byzcoin.Arguments{{Name: "write", Value: writeBuf}},
 			},
+			SignerCounter: []uint64{ctrG.Counters[0]+1, ctrO.Counters[0]+1},
 		}},
 	}
 
-	err = ctx.Instructions[0].SignBy(controlDarc.GetID(), signerG, signerO)
+	err = ctx.SignWith(signerG, signerO)
 	if err != nil {
 		return nil, instID, err
 	}
@@ -277,6 +295,7 @@ func (s *ser) addWrite(key []byte, wData SecretData,
 
 	return &resp.Proof, instID, err
 }
+
 
 //Symmetric encryption AES
 func encrypt(plaintext []byte, key []byte) ([]byte, error) {

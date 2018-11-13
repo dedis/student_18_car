@@ -37,10 +37,6 @@ func TestKeyValue_Spawn(t *testing.T) {
 	// Wait for the proof to be available.
 	pr, err := bct.cl.WaitProof(instID, bct.gMsg.BlockInterval, nil)
 	require.Nil(t, err)
-
-	//_, err = bct.cl.AddTransactionAndWait(ctx, 5)
-	//require.Nil(t, err)
-
 	// Make sure the proof is a matching proof and not a proof of absence.
 	require.True(t, pr.InclusionProof.Match())
 
@@ -192,6 +188,7 @@ func newBCTest(t *testing.T) (out *bcTest) {
 		[]string{"spawn:keyValue", "spawn:darc", "invoke:update"}, out.signer.Identity())
 	require.Nil(t, err)
 	out.gDarc = &out.gMsg.GenesisDarc
+
 	// This BlockInterval is good for testing, but in real world applications this
 	// should be more like 5 seconds.
 	out.gMsg.BlockInterval = time.Second / 2
@@ -221,7 +218,6 @@ func (bct *bcTest) createInstance(t *testing.T, args byzcoin.Arguments) byzcoin.
 	// And we need to sign the instruction with the signer that has his
 	// public key stored in the darc.
 	require.Nil(t, ctx.Instructions[0].SignBy(bct.gDarc.GetBaseID(), bct.signer))
-	//require.Nil(t, ctx.Instructions[0].SignBy(bct.gDarc.GetBaseID(), bct.signer))
 
 	// Sending this transaction to ByzCoin does not directly include it in the
 	// global state - first we must wait for the new block to be created.

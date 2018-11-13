@@ -33,18 +33,23 @@ func ContractCar(cdb byzcoin.CollectionView, inst byzcoin.Instruction,
 		if inst.Spawn.ContractID != ContractCarID {
 			return nil, nil, errors.New("can only spawn car instances")
 		}
-
-		//c is the value of the argument with name car
-		c := inst.Spawn.Args.Search("car")
-		if c == nil || len(c) == 0 {
+		//cBuf is the value of the argument with name car
+		cBuf := inst.Spawn.Args.Search("car")
+		if cBuf == nil || len(cBuf) == 0 {
 			return nil, nil, errors.New("need a car argument")
+		}
+		//TODO: verify that is car
+		car := Car{}
+		err = protobuf.Decode(cBuf, &car)
+		if err != nil {
+			return
 		}
 
 		instID := inst.DeriveID("")
-
+		//creating the Car Instance in the global state
 		scs = []byzcoin.StateChange{
 			byzcoin.NewStateChange(byzcoin.Create, instID,
-				inst.Spawn.ContractID, c, darcID),
+				inst.Spawn.ContractID, cBuf, darcID),
 		}
 		return
 
@@ -52,6 +57,7 @@ func ContractCar(cdb byzcoin.CollectionView, inst byzcoin.Instruction,
 		if inst.Invoke.Command != "addReport" {
 			return nil, nil, errors.New("Value contract can only add Reports")
 		}
+		//getting the Car Data from the car instance
 		var carBuf []byte
 		carBuf, _, _, err = cdb.GetValues(inst.InstanceID.Slice())
 		car := Car{}
@@ -59,7 +65,8 @@ func ContractCar(cdb byzcoin.CollectionView, inst byzcoin.Instruction,
 		if err != nil {
 			return
 		}
-		err = car.Update(inst.Invoke.Args)
+		//adding reports to the car data
+		err = car.Add(inst.Invoke.Args)
 		if err != nil {
 			return
 		}
@@ -67,23 +74,24 @@ func ContractCar(cdb byzcoin.CollectionView, inst byzcoin.Instruction,
 		if err != nil {
 			return
 		}
+		//updating the car instance so that it contains the new reports
 		scs = []byzcoin.StateChange{
 			byzcoin.NewStateChange(byzcoin.Update, inst.InstanceID,
 				ContractCarID, carBuf, darcID),
 		}
-
 		return
 	default:
 		panic("should not get here")
 	}
 }
 
-func (car *Car) Update(args byzcoin.Arguments) error{
+//the arguments should have "report" as name and the Report marshaled in bytes as value
+func (car *Car) Add(args byzcoin.Arguments) error{
 	var report Report
 	var err error
-	for _, kv := range args {
-		if kv.Name == "report" {
-			err = protobuf.Decode(kv.Value, &report)
+	for _, rep := range args {
+		if rep.Name == "report" {
+			err = protobuf.Decode(rep.Value, &report)
 			car.Reports = append(car.Reports, report)
 		}
 	}

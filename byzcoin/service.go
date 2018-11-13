@@ -21,10 +21,6 @@ var ServiceName = "Calypso_Car"
 func init() {
 	_, err := onet.RegisterNewService(ServiceName, newService)
 	log.ErrFatal(err)
-
-	/*var err2 error
-	calypsoID, err2 = onet.RegisterNewService(ServiceName, newServiceCalypso)
-	log.ErrFatal(err2)*/
 }
 
 // Service is only used to being able to store our contracts
@@ -38,7 +34,7 @@ func newService(c *onet.Context) (onet.Service, error) {
 	s := &Service{
 		ServiceProcessor: onet.NewServiceProcessor(c),
 	}
-	byzcoin.RegisterContract(c, ContractKeyValueID, ContractKeyValue)
 	byzcoin.RegisterContract(c, ContractCarID, ContractCar)
+	byzcoin.RegisterContract(c, ContractKeyValueID, ContractKeyValue)
 	return s, nil
 }

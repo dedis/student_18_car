@@ -15,44 +15,68 @@ func TestService_DarcStructure(t *testing.T) {
 	t.Log(s.gDarc.String())
 
 	admin := darc.NewSignerEd25519(nil, nil)
-	darcAdmin, err := s.createAdminDarc(admin)
+	darcAdmin, err := s.spawnAdminDarc(admin)
 	require.Nil(t,err)
 	t.Log("Admin Darc")
 	t.Log(darcAdmin.String())
 
-	user, darcUser := s.createUserDarc(t, darcAdmin, admin)
+	user := darc.NewSignerEd25519(nil, nil)
+	darcUser,err := s.spawnUserDarc(darcAdmin, admin, user)
+	require.Nil(t,err)
 	t.Log("User Darc")
 	t.Log(darcUser.String())
 
-	darcReader := s.createReaderDarc(t, darcAdmin, admin, darcUser)
+	darcReader,err := s.spawnReaderDarc(darcAdmin, admin, darcUser)
+	require.Nil(t,err)
 	t.Log("Reader Darc")
 	t.Log(darcReader.String())
 
 	//newGarage := darc.NewSignerEd25519(nil, nil)
-	darcGarage := s.createGarageDarc(t, darcAdmin, admin, darcUser)
+	darcGarage,err := s.spawnGarageDarc(darcAdmin, admin, darcUser)
+	require.Nil(t,err)
 	t.Log("Garage Darc")
 	t.Log(darcGarage.String())
 
-	darcCar := s.createCarDarc(t, darcAdmin,
+	darcCar,err := s.spawnCarDarc(darcAdmin,
 		admin, darcReader, darcGarage)
+	require.Nil(t,err)
 	t.Log("Car Darc")
 	t.Log(darcCar.String())
 
 	newReader := darc.NewSignerEd25519(nil, nil)
-	evolved_darc := s.addSigner(t, darcReader, newReader, user)
+	evolved_darc, err := s.addSigner(darcReader, newReader, user)
+	require.Nil(t,err)
 	t.Log("Evolved Reader Darc")
 	t.Log(evolved_darc.String())
 
+	newReader2 := darc.NewSignerEd25519(nil, nil)
+	evolved_darc2, err := s.addSigner(evolved_darc, newReader2, user)
+	require.Nil(t,err)
+	t.Log("Evolved Reader Darc 2")
+	t.Log(evolved_darc2.String())
+
+	newReader3 := darc.NewSignerEd25519(nil, nil)
+	evolved_darc3, err := s.addSigner(evolved_darc2, newReader3, user)
+	require.Nil(t,err)
+	t.Log("Evolved Reader Darc 2")
+	t.Log(evolved_darc3.String())
+
+	evolved_darc4, err := s.removeSigner(t, evolved_darc3, newReader3, user)
+	require.Nil(t,err)
+	t.Log("Evolved Reader Darc 3")
+	t.Log(evolved_darc4.String())
+
 	newGarage := darc.NewSignerEd25519(nil, nil)
-	evolvedCar_darc := s.addSigner(t, darcGarage, newGarage, user)
-	t.Log("Evolved Reader Darc")
-	t.Log(evolvedCar_darc.String())
+	evolvedGarage_darc, err := s.addSigner(darcGarage, newGarage, user)
+	require.Nil(t,err)
+	t.Log("Evolved Garage Darc")
+	t.Log(evolvedGarage_darc.String())
 
 	car := NewCar("123A2314")
 
 	//carTemp := Car{}
 
-	cInstance, err := s.createCarInstance(t, car,
+	cInstance, err := s.createCarInstance(car,
 		darcCar, admin)
 	require.Nil(t, err)
 	t.Log("Car Instance")
@@ -76,13 +100,12 @@ func TestService_DarcStructure(t *testing.T) {
 	t.Log(carData.Vin)
 
 
-
-	var wData WriteData
+	var wData SecretData
 	wData.ECOScore = "2310"
 	wData.Mileage = "100 000"
 	wData.Warranty = true
 
-	s.addReport(t, cInstance,
+	s.addReport(cInstance,
 		darcCar, wData, newGarage, user)
 
 	resp, err = s.cl.GetProof(cInstance.Slice())
@@ -100,16 +123,10 @@ func TestService_DarcStructure(t *testing.T) {
 	t.Log(carData2.Reports)
 
 
+	secrets, err := s.readReports(cInstance, darcCar, newReader, user)
+	require.Nil(t, err)
 
-	/*//VIN number
-	vin := "123454321324"
-	args := byzcoin.Arguments{
-		{
-			Name:  "car",
-			Value: []byte(vin),
-		},
-	}
-	cInstance := s.createCarInstance(t, args, darcCar, admin)
-	t.Log("Car Instance")
-	t.Log(cInstance.String())*/
+	t.Log("Mileage")
+	t.Log(secrets[0].Mileage)
+
 }

@@ -84,7 +84,7 @@ func newSerN(t *testing.T, interval time.Duration, nodes int, viewchange bool) *
 func (s *ser) createGenesis(t *testing.T, interval time.Duration) {
 	var err error
 	s.genesisMsg, err = byzcoin.DefaultGenesisMsg(byzcoin.CurrentVersion, s.roster,
-		[]string{"spawn:darc", "spawn:" + calypso.ContractWriteID, "spawn:" + calypso.ContractReadID}, s.signer.Identity())
+		[]string{"spawn:darc"}, s.signer.Identity())
 	require.Nil(t, err)
 	s.gDarc = &s.genesisMsg.GenesisDarc
 	s.genesisMsg.BlockInterval = interval

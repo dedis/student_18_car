@@ -1,22 +1,11 @@
 package byzcoin
 
-import(
-	"github.com/dedis/cothority/byzcoin"
-	"time"
-)
-
-
 // PROTOSTART
-// package keyvalue;
+// package car;
 //
 // option java_package = "ch.epfl.dedis.template.proto";
-// option java_outer_classname = "KeyValueProto";
+// option java_outer_classname = "CarProto";
 
-// KeyValue is created as a structure here, as go's map returns the
-// elements in a random order and as such is not suitable for use in a
-// system that needs to return always the same state.
-
-//For the Car contract Key will be the VIN, and value the car struct
 type KeyValue struct {
 	Key   string
 	Value []byte
@@ -27,19 +16,23 @@ type KeyValueData struct {
 	Storage []KeyValue
 }
 
+//todo Report.java
 type Report struct {
-	Date time.Time
+	Date string
 	GarageId string
-	WriteInstanceID byzcoin.InstanceID
+	//todo there is an error when i run make proto
+	//WriteInstanceID byzcoin.InstanceID
+	WriteInstanceID []byte
 }
-
+//todo Car.java and CarInstance.java
 type Car struct {
 	Vin string
 	Reports []Report
 }
-
-type WriteData struct {
+//todo SecretData.java
+type SecretData struct {
 	ECOScore string
 	Mileage string
 	Warranty bool
+	CheckNote string
 }

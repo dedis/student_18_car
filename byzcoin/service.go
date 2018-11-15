@@ -9,9 +9,9 @@ import (
 // This service is only used because we need to register our contracts to
 // the ByzCoin service. So we create this stub and add contracts to it
 // from the `contracts` directory.
-
+var ServiceName = "Car"
 func init() {
-	_, err := onet.RegisterNewService("contracts", newService)
+	_, err := onet.RegisterNewService(ServiceName, newService)
 	log.ErrFatal(err)
 }
 
@@ -20,6 +20,7 @@ type Service struct {
 	// We need to embed the ServiceProcessor, so that incoming messages
 	// are correctly handled.
 	*onet.ServiceProcessor
+
 }
 
 func newService(c *onet.Context) (onet.Service, error) {

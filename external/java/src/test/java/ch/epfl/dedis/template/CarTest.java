@@ -47,7 +47,7 @@ public class CarTest {
     static Darc carDarc;
     static DarcInstance carDarcInstance;
 
-    private final static Logger logger = LoggerFactory.getLogger(KeyValueTest.class);
+    private final static Logger logger = LoggerFactory.getLogger(CarTest.class);
     private TestServerController testInstanceController;
 
     /**
@@ -60,13 +60,13 @@ public class CarTest {
     @BeforeEach
     void initAll() throws Exception {
         testInstanceController = TestServerInit.getInstance();
+
         //creating genesis darc
         genAdmin = new SignerEd25519();
         Rules rules = Darc.initRules(Arrays.asList(genAdmin.getIdentity()),
                 Arrays.asList(genAdmin.getIdentity()));
 
         genesisDarc = ByzCoinRPC.makeGenesisDarc(genAdmin, testInstanceController.getRoster());
-        //genesisDarc = new Darc(rules, "genesis".getBytes());
 
         bc = new ByzCoinRPC(testInstanceController.getRoster(), genesisDarc, Duration.of(500, MILLIS));
         if (!bc.checkLiveness()) {
@@ -76,34 +76,42 @@ public class CarTest {
 
         // Show how to evolve a darc to add new rules. We could've also create a correct genesis darc in the
         // lines above by adding all rules. But for testing purposes this shows how to add new rules to a darc.
-        /*Darc darc2 = genesisDarc.copy();
-        darc2.setRule("spawn:keyValue", admin.getIdentity().toString().getBytes());
-        darc2.setRule("invoke:update", admin.getIdentity().toString().getBytes());
-        genesisDarcInstance.evolveDarcAndWait(darc2, genAdmin);*/
+        Darc darc2 = genesisDarc.copy();
+        darc2.setRule("spawn:darc", genAdmin.getIdentity().toString().getBytes());
+        //darc2.setRule("invoke:update", admin.getIdentity().toString().getBytes());
+        genesisDarcInstance.evolveDarcAndWait(darc2, genAdmin, 10);
+
+
+
+
 
         //Spawning admin darc with the spawn:darc rule for a new signer.
-        Signer admin = new SignerEd25519();
+        admin = new SignerEd25519();
         adminDarc = new Darc(Arrays.asList(admin.getIdentity()), Arrays.asList(admin.getIdentity()), "Admin darc".getBytes());
         adminDarc.setRule("spawn:darc", admin.getIdentity().toString().getBytes());
         adminDarcInstance = genesisDarcInstance.spawnDarcAndWait(adminDarc, genAdmin, 10);
-        //not working --> ERROR: cannot find symbol
-        //[ERROR]   symbol:   method spawnDarcAndWait(ch.epfl.dedis.lib.byzcoin.darc.Darc,ch.epfl.dedis.lib.byzcoin.darc.Signer,int)
 
-        //adminDarcInstance = new DarcInstance(bc, adminDarc);
+
+
 
         //Spawning user darc with invoke:evolve and _sign rules
         user = new SignerEd25519();
         userDarc = new Darc(Arrays.asList(user.getIdentity()), Arrays.asList(user.getIdentity()), "User darc".getBytes());
         userDarcInstance = adminDarcInstance.spawnDarcAndWait(userDarc, admin, 10);
-        //userDarcInstance = new DarcInstance(bc, userDarc);
+
+
 
         //Spawning reader darc with invoke:evolve and _sign rules
         readerDarc = new Darc(Arrays.asList(userDarc.getIdentity()), Arrays.asList(userDarc.getIdentity()), "Reader darc".getBytes());
         readerDarcInstance = adminDarcInstance.spawnDarcAndWait(readerDarc, admin, 10);
 
+
+
         //Spawning garage darc with invoke:evolve and _sign rules
         garageDarc = new Darc(Arrays.asList(userDarc.getIdentity()), Arrays.asList(userDarc.getIdentity()), "Garage darc".getBytes());
         garageDarcInstance = adminDarcInstance.spawnDarcAndWait(garageDarc, admin, 10);
+
+
 
         //Spawning car darc with spawn:car, invoke:addReport, spawn:calypsoWrite and spawn:calypsoRead rules
         Rules rs = new Rules();
@@ -114,8 +122,13 @@ public class CarTest {
         carDarc = new Darc(rs, "Car darc".getBytes());
         carDarcInstance = adminDarcInstance.spawnDarcAndWait(carDarc, admin, 10);
 
+        System.out.println(carDarcInstance.getDarc().toString());
 
+        Car c = new Car("123A456");
 
+        CarInstance ci = new CarInstance(bc, genesisDarcInstance, genAdmin, c);
+        System.out.println(ci.getVin());
+        System.out.println("end init");
     }
 
     /**
@@ -136,18 +149,18 @@ public class CarTest {
      *
      * @throws Exception
      */
-/*    @Test
-    void spawnValue() throws Exception {
-        KeyValue mKV = new KeyValue("value", "314159".getBytes());
+  // @Test
+    //void spawnValue() throws Exception {
+      //  Car c = new Car("123A456");
 
-        KeyValueInstance vi = new KeyValueInstance(bc, genesisDarcInstance, admin, Arrays.asList(mKV));
-        assertEquals(mKV, vi.getKeyValues().get(0));
+        //CarInstance ci = new CarInstance(bc, carDarcInstance, admin, c);
+        //assertEquals(c, ci);
 
-        mKV.setValue("27".getBytes());
-        vi.updateKeyValueAndWait(Arrays.asList(mKV), admin, 10);
+        //mKV.setValue("27".getBytes());
+        //vi.updateKeyValueAndWait(Arrays.asList(mKV), admin, 10);
 
-        assertEquals(mKV, vi.getKeyValues().get(0));
-    }*/
+        //assertEquals(mKV, vi.getKeyValues().get(0));
+    //}
 
     /**
      * We only give the client the roster and the genesis ID. It should be able to find the configuration, latest block

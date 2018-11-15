@@ -8,7 +8,7 @@ import (
 	"errors"
 	"os"
 
-	template "github.com/dedis/student_18_car"
+	template "github.com/dedis/cothority_template"
 
 	"github.com/dedis/onet/app"
 

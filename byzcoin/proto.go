@@ -6,6 +6,7 @@ package byzcoin
 // option java_package = "ch.epfl.dedis.template.proto";
 // option java_outer_classname = "CarProto";
 
+
 //todo Report.java
 type Report struct {
 	Date string

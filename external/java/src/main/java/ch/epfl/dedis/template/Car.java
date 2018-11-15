@@ -33,6 +33,17 @@ public class Car {
     }
 
     /**
+     * Create a Car object given its Vehicle ID Number.
+     *
+     * @param vin the Vehicle ID Number.
+     */
+    public Car(String vin) {
+        this.vin = vin;
+        this.reportList = new ArrayList<>();
+    }
+
+
+    /**
      * Create a Car object given its binary representation of the protobuf.
      *
      * @param data binary representation of the protobuf
@@ -96,6 +107,16 @@ public class Car {
     //TODO encode the car into []byte
     public Argument toArgument() {
       return new Argument("car", this.toProto().toByteArray());
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Car c = (Car) o;
+
+        //TODO how to compare instances
+        return this.vin.equals(c.getVin());
     }
 
 }

@@ -28,7 +28,7 @@ import java.util.List;
  * instanceID, in which case it will fetch itself the needed data from ByzCoin. Or it is initialized
  * with a proof, then it will simply copy the values stored in the proof to create a new CarInstance.
  */
-public class CarInstance {
+public class  CarInstance {
     private Instance instance;
     private ByzCoinRPC bc;
     private Car car;
@@ -76,8 +76,9 @@ public class CarInstance {
         this.bc = bc;
         List<Argument> args = new ArrayList<>();
         args.add(c.toArgument());
-
+        System.out.println("in car instance constructor");
         Proof p = darcInstance.spawnInstanceAndWait("car", signer, args, 10);
+        System.out.println("in car instance constructor: after proof");
         update(p);
     }
 
@@ -160,7 +161,7 @@ public class CarInstance {
     /**
      * Sends a request to update the keyvalue instance but doesn't wait for the request to be delivered.
      *
-     * @param keyValues the keyValues to replace/delete/add to the list.
+     * @param reports the keyValues to replace/delete/add to the list.
      * @param owner must have its identity in the "invoke:update" rule
      * @return a TransactionId pointing to the transaction that should be included
      * @throws CothorityException
@@ -175,7 +176,7 @@ public class CarInstance {
      * Asks ByzCoin to update the value and waits until the new value has
      * been stored in the global state.
      *
-     * @param keyValues the value to replace the old value.
+     * @param reports the value to replace the old value.
      * @param owner     is the owner that can sign to evolve the darc
      * @param wait      is the number of blocks to wait for an inclusion
      * @throws CothorityException
@@ -203,6 +204,10 @@ public class CarInstance {
             ret.add(rep);
         }
         return ret;
+    }
+
+    public String getVin() throws CothorityCryptoException {
+        return car.getVin();
     }
 
     /**

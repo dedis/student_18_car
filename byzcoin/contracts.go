@@ -39,11 +39,11 @@ func ContractCar(cdb byzcoin.ReadOnlyStateTrie, inst byzcoin.Instruction, ctxHas
 			return nil, nil, errors.New("need a car argument")
 		}
 		//TODO: verify that is car
-		car := Car{}
-		err = protobuf.Decode(cBuf, &car)
-		if err != nil {
-			return
-		}
+		//car := Car{}
+		//err = protobuf.Decode(cBuf, &car)
+		//if err != nil {
+		//	return
+		//}
 
 		instID := inst.DeriveID("")
 		//creating the Car Instance in the global state

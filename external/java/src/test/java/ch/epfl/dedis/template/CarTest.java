@@ -5,14 +5,13 @@ import ch.epfl.dedis.integration.TestServerInit;
 import ch.epfl.dedis.lib.Roster;
 import ch.epfl.dedis.lib.SkipblockId;
 import ch.epfl.dedis.byzcoin.ByzCoinRPC;
+import ch.epfl.dedis.calypso.*;
+import ch.epfl.dedis.byzcoin.Proof;
+import ch.epfl.dedis.lib.darc.*;
 import ch.epfl.dedis.lib.exception.CothorityCommunicationException;
 import ch.epfl.dedis.lib.exception.CothorityException;
 import ch.epfl.dedis.byzcoin.InstanceId;
 import ch.epfl.dedis.byzcoin.contracts.DarcInstance;
-import ch.epfl.dedis.lib.darc.Darc;
-import ch.epfl.dedis.lib.darc.Rules;
-import ch.epfl.dedis.lib.darc.Signer;
-import ch.epfl.dedis.lib.darc.SignerEd25519;
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,7 +19,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import static java.time.temporal.ChronoUnit.MILLIS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -28,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class CarTest {
     static ByzCoinRPC bc;
+    static CalypsoRPC calypso;
 
     static Signer genAdmin;
     static Darc genesisDarc;
@@ -63,24 +65,21 @@ public class CarTest {
 
         //creating genesis darc
         genAdmin = new SignerEd25519();
-        Rules rules = Darc.initRules(Arrays.asList(genAdmin.getIdentity()),
-                Arrays.asList(genAdmin.getIdentity()));
-
         genesisDarc = ByzCoinRPC.makeGenesisDarc(genAdmin, testInstanceController.getRoster());
 
+        System.out.println(genesisDarc.toString());
         bc = new ByzCoinRPC(testInstanceController.getRoster(), genesisDarc, Duration.of(500, MILLIS));
         if (!bc.checkLiveness()) {
             throw new CothorityCommunicationException("liveness check failed");
         }
-        genesisDarcInstance = DarcInstance.fromByzCoin(bc, genesisDarc);
 
-        // Show how to evolve a darc to add new rules. We could've also create a correct genesis darc in the
-        // lines above by adding all rules. But for testing purposes this shows how to add new rules to a darc.
-        Darc darc2 = genesisDarc.copy();
-        darc2.setRule("spawn:darc", genAdmin.getIdentity().toString().getBytes());
-        //darc2.setRule("invoke:update", admin.getIdentity().toString().getBytes());
-        genesisDarcInstance.evolveDarcAndWait(darc2, genAdmin, 10);
+        //bc.update();
 
+        genesisDarcInstance = bc.getGenesisDarcInstance();
+        //genesisDarcInstance = DarcInstance.fromByzCoin(bc, genesisDarc);
+        //genesisDarcInstance = DarcInstance.fromByzCoin(bc, genesisDarc.getId());
+        //genesisDarcInstance = new DarcInstance(bc, genesisDarc, genAdmin, Darc newDarc)
+        //genesisDarcInstance = DarcInstance.fromByzCoin(bc, genesisDarc);
 
 
 
@@ -149,18 +148,35 @@ public class CarTest {
      *
      * @throws Exception
      */
-  // @Test
-    //void spawnValue() throws Exception {
-      //  Car c = new Car("123A456");
+ /*  @Test
+    void spawnAndUpdateCar() throws Exception {
 
-        //CarInstance ci = new CarInstance(bc, carDarcInstance, admin, c);
-        //assertEquals(c, ci);
+       //spawn
+       Car c = new Car("123A456");
+       CarInstance ci = new CarInstance(bc, carDarcInstance, admin, c);
+       assertEquals(c, ci);
 
-        //mKV.setValue("27".getBytes());
-        //vi.updateKeyValueAndWait(Arrays.asList(mKV), admin, 10);
+       //update
+       String secret = "this is a secret";
+       Document doc = new Document(secret.getBytes(), 16, null, genesisDarc.getBaseId());
+       WriteInstance wi = new WriteInstance(calypso,
+               userDarc.getBaseId(), Arrays.asList(user), doc.getWriteData(calypso.getLTS()));
+       Proof p = calypso.getProof(wi.getInstance().getId());
+       assertTrue(p.matches());
 
-        //assertEquals(mKV, vi.getKeyValues().get(0));
-    //}
+       List<Report> reports = new ArrayList<>();
+       Report report = new Report("15.02.1994", "1234523", wi.getInstance().getId().getId());
+       reports.add(report);
+
+       ci.addReportAndWait(reports, user, 10);
+       assertEquals(report, ci.getReports().get(0));
+
+       //mKV.setValue("27".getBytes());
+       //vi.updateKeyValueAndWait(Arrays.asList(mKV), admin, 10);
+
+       //assertEquals(mKV, vi.getKeyValues().get(0));
+    }*/
+
 
     /**
      * We only give the client the roster and the genesis ID. It should be able to find the configuration, latest block

@@ -33,7 +33,7 @@ public class Report {
      * @param date the date for the object
      * @param garageId the garageId for the object
      */
-    public Report(String date, String garageId, byte[] writeInstance) {
+    public Report(String date, String garageId, byte[] writeInstanceID) {
         this.date = date;
         this.garageId = garageId;
         this.writeInstanceID = writeInstanceID;
@@ -75,7 +75,7 @@ public class Report {
     }
 
     /**
-     * @param garageId the new garageId
+     * @param writeInstanceID the new writeInstanceID
      */
     public void setWriteInstanceID(byte[] writeInstanceID) {
         this.writeInstanceID = writeInstanceID;

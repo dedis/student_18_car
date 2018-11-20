@@ -12,18 +12,18 @@ var ContractCarID = "car"
 
 // ContractCar can only spawn new Car instances and will store the arguments in
 // the data field.
-func ContractCar(cdb byzcoin.ReadOnlyStateTrie, inst byzcoin.Instruction, ctxHash []byte,
+func ContractCar(cdb byzcoin.ReadOnlyStateTrie, inst byzcoin.Instruction,
 	cIn []byzcoin.Coin) (scs []byzcoin.StateChange, cOut []byzcoin.Coin, err error) {
 
 	cOut = cIn
 
-	err = inst.Verify(cdb, ctxHash)
+	err = inst.VerifyDarcSignature(cdb)
 	if err != nil {
 		return
 	}
 
 	var darcID darc.ID
-	_, _, _, darcID, err = cdb.GetValues(inst.InstanceID.Slice())
+	_, _, darcID, err = cdb.GetValues(inst.InstanceID.Slice())
 	if err != nil {
 		return
 	}
@@ -39,11 +39,11 @@ func ContractCar(cdb byzcoin.ReadOnlyStateTrie, inst byzcoin.Instruction, ctxHas
 			return nil, nil, errors.New("need a car argument")
 		}
 		//TODO: verify that is car
-		//car := Car{}
-		//err = protobuf.Decode(cBuf, &car)
-		//if err != nil {
-		//	return
-		//}
+		car := Car{}
+		err = protobuf.Decode(cBuf, &car)
+		if err != nil {
+			return
+		}
 
 		instID := inst.DeriveID("")
 		//creating the Car Instance in the global state
@@ -59,7 +59,7 @@ func ContractCar(cdb byzcoin.ReadOnlyStateTrie, inst byzcoin.Instruction, ctxHas
 		}
 		//getting the Car Data from the car instance
 		var carBuf []byte
-		carBuf, _, _, _, err = cdb.GetValues(inst.InstanceID.Slice())
+		carBuf, _, _, err = cdb.GetValues(inst.InstanceID.Slice())
 		car := Car{}
 		err = protobuf.Decode(carBuf, &car)
 		if err != nil {

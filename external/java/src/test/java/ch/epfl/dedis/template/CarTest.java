@@ -66,8 +66,8 @@ public class CarTest {
         //creating genesis darc
         genAdmin = new SignerEd25519();
         genesisDarc = ByzCoinRPC.makeGenesisDarc(genAdmin, testInstanceController.getRoster());
-
         System.out.println(genesisDarc.toString());
+
         bc = new ByzCoinRPC(testInstanceController.getRoster(), genesisDarc, Duration.of(500, MILLIS));
         if (!bc.checkLiveness()) {
             throw new CothorityCommunicationException("liveness check failed");
@@ -76,6 +76,7 @@ public class CarTest {
         //bc.update();
 
         genesisDarcInstance = bc.getGenesisDarcInstance();
+
         //genesisDarcInstance = DarcInstance.fromByzCoin(bc, genesisDarc);
         //genesisDarcInstance = DarcInstance.fromByzCoin(bc, genesisDarc.getId());
         //genesisDarcInstance = new DarcInstance(bc, genesisDarc, genAdmin, Darc newDarc)

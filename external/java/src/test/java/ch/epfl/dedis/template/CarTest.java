@@ -80,7 +80,6 @@ public class CarTest {
         //genesisDarcInstance = DarcInstance.fromByzCoin(bc, genesisDarc);
         //genesisDarcInstance = DarcInstance.fromByzCoin(bc, genesisDarc.getId());
         //genesisDarcInstance = new DarcInstance(bc, genesisDarc, genAdmin, Darc newDarc)
-        //genesisDarcInstance = DarcInstance.fromByzCoin(bc, genesisDarc);
 
 
 
@@ -123,12 +122,6 @@ public class CarTest {
         carDarcInstance = adminDarcInstance.spawnDarcAndWait(carDarc, admin, 10);
 
         System.out.println(carDarcInstance.getDarc().toString());
-
-        Car c = new Car("123A456");
-
-        CarInstance ci = new CarInstance(bc, genesisDarcInstance, genAdmin, c);
-        System.out.println(ci.getVin());
-        System.out.println("end init");
     }
 
     /**

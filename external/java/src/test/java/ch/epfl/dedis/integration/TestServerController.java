@@ -25,7 +25,7 @@ public abstract class TestServerController {
 
     public abstract List<CalypsoFactory.ConodeAddress> getConodes();
 
-    
+
     public Roster getRoster() {
         return new Roster(getConodes().stream()
                 .map(conodeAddress -> new ServerIdentity(conodeAddress.getAddress(), conodeAddress.getPublicKey()))

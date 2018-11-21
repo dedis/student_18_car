@@ -18,27 +18,26 @@ import java.util.Arrays;
 import java.util.List;
 
 public class DockerTestServerController extends TestServerController {
+
     private static final Logger logger = LoggerFactory.getLogger(DockerTestServerController.class);
     private static final String TEST_SERVER_IMAGE_NAME = "dedis/conode_template-test:latest";
     private static final String TEMPORARY_DOCKER_IMAGE = "conode-test-run";
 
-    private final GenericContainer blockchainContainer;
+    private final GenericContainer<?> blockchainContainer;
+
 
     protected DockerTestServerController() {
         logger.warn("local docker will be started for tests.");
         logger.info("This test run assumes that image " + TEST_SERVER_IMAGE_NAME + " is available in your system.");
-        logger.info("To build such image you should run `make docker` in the cothority_template directory.");
-        logger.info("Such run will create base image and image with test keys.");
+        logger.info("To build such image you should run `make docker docker_test` - such run will create base image and image with test keys.");
         logger.info("For a test run this code will create additional docker image with name " + TEMPORARY_DOCKER_IMAGE +
                 ", at the end this additional image will be automatically deleted");
         try {
-            blockchainContainer = new GenericContainer(
+            blockchainContainer = new GenericContainer<>(
                     new ImageFromDockerfile(TEMPORARY_DOCKER_IMAGE, true)
-                            .withDockerfileFromBuilder(builder -> {
-                                builder
-                                        .from(TEST_SERVER_IMAGE_NAME)
-                                        .expose(7002, 7003, 7004, 7005, 7006, 7007, 7008, 7009);
-                            })
+                            .withDockerfileFromBuilder(builder -> builder
+                                    .from(TEST_SERVER_IMAGE_NAME)
+                                    .expose(7002, 7003, 7004, 7005, 7006, 7007, 7008, 7009))
             );
 
             blockchainContainer.setPortBindings(Arrays.asList(
@@ -63,16 +62,19 @@ public class DockerTestServerController extends TestServerController {
         }
     }
 
-    @Override
+
+   /* @Override
     public int countRunningConodes() throws IOException, InterruptedException {
         Container.ExecResult psResults = blockchainContainer.execInContainer("ps", "-o", "pid=", "-C", "conode");
         return psResults.getStdout().split("\\n").length;
-    }
+    }*/
 
     @Override
     public void startConode(int nodeNumber) throws InterruptedException {
         logger.info("Starting container {}", nodeNumber);
         runCmdInBackground(blockchainContainer, "conode", "-d", "2", "-c", "co" + nodeNumber + "/private.toml", "server");
+        // Wait a bit for the server to actually start.
+        Thread.sleep(1000);
     }
 
     @Override
@@ -87,6 +89,7 @@ public class DockerTestServerController extends TestServerController {
             }
         }
     }
+
 
     @Override
     public List<CalypsoFactory.ConodeAddress> getConodes() {
@@ -110,4 +113,5 @@ public class DockerTestServerController extends TestServerController {
         dockerClient.execStartCmd(execCreateCmdResponse.getId())
                 .exec(new FrameConsumerResultCallback()).awaitStarted();
     }
+
 }

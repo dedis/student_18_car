@@ -1,4 +1,4 @@
-FROM dedis/conode_template:dev
+FROM dedis/conode:dev
 
 # EXPOSE 7003 7005 7007 7009
 
@@ -17,4 +17,9 @@ COPY co4/public.toml co4/public.toml
 # 2 - debug-level: 0 - none .. 5 - a lot
 # -wait - don't return from script when all nodes are started
 RUN cp ./conode /usr/local/bin/
-CMD ["env", "GODEBUG=gctrace=0", "./run_conode.sh", "local",  "4", "2", "-wait", "-nobuild" ]
+
+#RUN apt-get install psmisc
+
+
+CMD ["env", "GODEBUG=gctrace=0", "DEBUG_TIME=true", "./run_conode.sh", "local",  "4", "2", "-wait", "-nobuild" ]
+#CMD ["env", "GODEBUG=gctrace=0", "./run_conode.sh", "local",  "4", "2", "-wait", "-nobuild" ]

@@ -49,3 +49,18 @@ clean:
 # This is in it's own rule because the Docker build needs it also.
 exe/conode.Linux.x86_64:
 	GOOS=linux GOARCH=amd64 go build $(flags) -o $@
+
+#addition from the makefile in cothority conode
+
+bindist: clean exe/conode.Linux.x86_64
+	rm -rf $(OUTPUT_DIR)
+	mkdir $(OUTPUT_DIR)
+	cp exe/conode.Linux.x86_64 $(OUTPUT_DIR)
+	GOOS=linux  GOARCH=arm go build $(flags) -o $(OUTPUT_DIR)/conode.Linux.armv7l
+	GOOS=freebsd GOARCH=amd64 go build $(flags) -o $(OUTPUT_DIR)/conode.FreeBSD.amd64
+	GOOS=windows GOARCH=amd64 go build $(flags) -o $(OUTPUT_DIR)/conode.exe
+	echo "#!/bin/sh" > $(OUTPUT_DIR)/conode
+	echo "./conode.\`uname -s\`.\`uname -m\` \$$*" >> $(OUTPUT_DIR)/conode
+	chmod +x $(OUTPUT_DIR)/conode
+	LANG=C tar zcf $(OUTPUT_DIR).tar.gz $(OUTPUT_DIR)
+	rm -rf $(OUTPUT_DIR)

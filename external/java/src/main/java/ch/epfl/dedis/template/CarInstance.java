@@ -5,6 +5,7 @@ import ch.epfl.dedis.byzcoin.transaction.ClientTransaction;
 import ch.epfl.dedis.byzcoin.transaction.Instruction;
 import ch.epfl.dedis.byzcoin.transaction.Invoke;
 import ch.epfl.dedis.lib.Hex;
+import ch.epfl.dedis.calypso.*;
 import ch.epfl.dedis.lib.exception.CothorityCryptoException;
 import ch.epfl.dedis.lib.exception.CothorityException;
 import ch.epfl.dedis.lib.exception.CothorityNotFoundException;
@@ -30,7 +31,7 @@ import java.util.List;
  */
 public class  CarInstance {
     private Instance instance;
-    private ByzCoinRPC bc;
+    private CalypsoRPC bc;
     private Car car;
 
     private final static Logger logger = LoggerFactory.getLogger(CarInstance.class);
@@ -45,7 +46,7 @@ public class  CarInstance {
      * @param id of the value-instance to connect to
      * @throws CothorityException
      */
-    public CarInstance(ByzCoinRPC ol, InstanceId id) throws CothorityException {
+    public CarInstance(CalypsoRPC ol, InstanceId id) throws CothorityException {
         this.bc = ol;
         update(id);
     }
@@ -57,7 +58,7 @@ public class  CarInstance {
      * @param p is a proof for a valid KeyValue instance
      * @throws CothorityException
      */
-    public CarInstance(ByzCoinRPC bc, Proof p) throws CothorityException {
+    public CarInstance(CalypsoRPC bc, Proof p) throws CothorityException {
         this.bc = bc;
         update(p);
     }
@@ -71,7 +72,7 @@ public class  CarInstance {
      * @param c a Car to include in the data of the instance
      * @throws CothorityException
      */
-    public CarInstance(ByzCoinRPC bc, DarcInstance darcInstance,
+    public CarInstance(CalypsoRPC bc, DarcInstance darcInstance,
                        Signer signer, Car c) throws CothorityException{
         this.bc = bc;
         List<Argument> args = new ArrayList<>();
@@ -216,4 +217,23 @@ public class  CarInstance {
     public Instance getInstance() {
         return instance;
     }
+
+
+    //todo:    public static DarcInstance fromByzCoin(ByzCoinRPC bc, DarcId baseId) throws CothorityException {
+    //        return fromByzCoin(bc, new InstanceId(baseId.getId()));
+    //    }
+    //
+    //    /**
+    //     * Instantiates a new DarcInstance given a working ByzCoin service and
+    //     * an instanceId. This instantiator will contact byzcoin and try to get
+    //     * the current darcInstance. If the instance is not found, or is not of
+    //     * contractId "darc", an exception will be thrown.
+    //     *
+    //     * @param bc is a running ByzCoin ledger
+    //     * @param d  of which the base id will be taken to search in ByzCoin
+    //     * @return DarcInstance representing the latest version of the given baseId
+    //     * @throws CothorityException if somethings goes wrong
+    //     */
+    //    public static DarcInstance fromByzCoin(ByzCoinRPC bc, Darc d) throws CothorityException {
+    //        return fromByzCoin(bc, d.getBaseId());
 }

@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class CarTest {
-    static ByzCoinRPC bc;
+    //static ByzCoinRPC bc;
     static CalypsoRPC calypso;
 
     static Signer genAdmin;
@@ -66,16 +66,18 @@ public class CarTest {
         //creating genesis darc
         genAdmin = new SignerEd25519();
         genesisDarc = ByzCoinRPC.makeGenesisDarc(genAdmin, testInstanceController.getRoster());
-        System.out.println(genesisDarc.toString());
 
-        bc = new ByzCoinRPC(testInstanceController.getRoster(), genesisDarc, Duration.of(500, MILLIS));
-        if (!bc.checkLiveness()) {
+
+        //bc = new ByzCoinRPC(testInstanceController.getRoster(), genesisDarc, Duration.of(500, MILLIS));
+        calypso = new CalypsoRPC(testInstanceController.getRoster(), genesisDarc, Duration.of(500, MILLIS));
+
+        if (!calypso.checkLiveness()) {
             throw new CothorityCommunicationException("liveness check failed");
         }
-
+        System.out.println(genesisDarc.toString());
         //bc.update();
 
-        genesisDarcInstance = bc.getGenesisDarcInstance();
+        genesisDarcInstance = calypso.getGenesisDarcInstance();
 
         //genesisDarcInstance = DarcInstance.fromByzCoin(bc, genesisDarc);
         //genesisDarcInstance = DarcInstance.fromByzCoin(bc, genesisDarc.getId());
@@ -131,7 +133,7 @@ public class CarTest {
      */
     @Test
     void ping() throws Exception {
-        assertTrue(bc.checkLiveness());
+        assertTrue(calypso.checkLiveness());
     }
 
     /**
@@ -141,35 +143,83 @@ public class CarTest {
      * Finally it updates the key/value pair to a new value.
      *
      * @throws Exception
+//     */
+//    @Test
+//    void addReader() throws Exception {
+//
+//        Signer reader = new SignerEd25519();
+//        readerDarc.addIdentity("_sign", reader.getIdentity(), Rules.AND);
+//        calypso.getGenesisDarcInstance().evolveDarcAndWait(readerDarc, admin, 10);
+//        System.out.println(readerDarc.toString());
+//
+//    }
+
+
+
+    /**
+     * Evolves the darc to give spawn-rights to create a keyValue contract, as well as the right to invoke the
+     * update command from the contract.
+     * Then it will store a first key/value pair and verify it's correctly stored.
+     * Finally it updates the key/value pair to a new value.
+     *
+     * @throws Exception
      */
- /*  @Test
-    void spawnAndUpdateCar() throws Exception {
+   @Test
+    void spawnCar() throws Exception {
 
        //spawn
        Car c = new Car("123A456");
-       CarInstance ci = new CarInstance(bc, carDarcInstance, admin, c);
-       assertEquals(c, ci);
+       CarInstance ci = new CarInstance(calypso, carDarcInstance, admin, c);
+       System.out.println("Car Instance:");
+       System.out.println(ci.getInstance().getId().toString());
+       Car c2 = new Car (ci.getInstance().getData());
+       assertEquals(c, c2);
+    }
 
-       //update
-       String secret = "this is a secret";
-       Document doc = new Document(secret.getBytes(), 16, null, genesisDarc.getBaseId());
-       WriteInstance wi = new WriteInstance(calypso,
-               userDarc.getBaseId(), Arrays.asList(user), doc.getWriteData(calypso.getLTS()));
-       Proof p = calypso.getProof(wi.getInstance().getId());
-       assertTrue(p.matches());
+    @Test
+    void spawnCarAddAndReadReport() throws Exception {
 
-       List<Report> reports = new ArrayList<>();
-       Report report = new Report("15.02.1994", "1234523", wi.getInstance().getId().getId());
-       reports.add(report);
+        //spawn
+        Car c = new Car("123A46");
+        CarInstance ci = new CarInstance(calypso, carDarcInstance, admin, c);
+        System.out.println("Car Instance:");
+        System.out.println(ci.getInstance().getId().toString());
+        Car c2 = new Car (ci.getInstance().getData());
+        assertEquals(c, c2);
 
-       ci.addReportAndWait(reports, user, 10);
-       assertEquals(report, ci.getReports().get(0));
+        //update
+        SecretData secret = new SecretData("1090", "100 000", true, "tires changed");
+        Document doc = new Document(secret.toProto().toByteArray(), 16, "sdf".getBytes(), carDarc.getBaseId());
+        //WriteData wd = new WriteData(calypso.getLTS(), secret.getBytes(),
+        //      new Encryption.keyIv(16).getKeyMaterial() , null,carDarc.getBaseId());
+        WriteInstance wi = new WriteInstance(calypso,
+                carDarc.getBaseId(), Arrays.asList(user), doc.getWriteData(calypso.getLTS()));
+        Proof p = calypso.getProof(wi.getInstance().getId());
+        assertTrue(p.matches());
 
-       //mKV.setValue("27".getBytes());
-       //vi.updateKeyValueAndWait(Arrays.asList(mKV), admin, 10);
+        List<Report> reports = new ArrayList<>();
+        Report report = new Report("15.02.1994", "1234523", wi.getInstance().getId().getId());
+        reports.add(report);
 
-       //assertEquals(mKV, vi.getKeyValues().get(0));
-    }*/
+        ci.addReportAndWait(reports, user, 10);
+        assertEquals(report, ci.getReports().get(0));
+
+        ReadInstance ri = new ReadInstance(calypso, wi, Arrays.asList(user));
+
+        DecryptKeyReply dkr = calypso.tryDecrypt(calypso.getProof(wi.getInstance().getId()), calypso.getProof(ri.getInstance().getId()));
+        // And derive the symmetric key, using the user's private key to decrypt it:
+        byte[] keyMaterial = dkr.getKeyMaterial(user.getPrivate());
+
+        // Finally get the document back:
+        Document doc2 = Document.fromWriteInstance(wi, keyMaterial);
+
+        SecretData s2 = new SecretData(doc2.getData());
+        //assertEquals(secret.getEcoScore(), s2.getEcoScore());
+
+        // And check it's the same.
+        assertTrue(doc.equals(doc2));
+
+    }
 
 
     /**

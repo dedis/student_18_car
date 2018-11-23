@@ -1,4 +1,4 @@
-FROM dedis/conode:dev
+FROM dedis/conode_template:dev
 
 # EXPOSE 7003 7005 7007 7009
 

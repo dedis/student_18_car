@@ -1,7 +1,10 @@
 package byzcoin
 
+import "time"
+
 // PROTOSTART
 // package car;
+// type :time.Time:sfixed64
 //
 // option java_package = "ch.epfl.dedis.template.proto";
 // option java_outer_classname = "CarProto";
@@ -9,7 +12,7 @@ package byzcoin
 
 //todo Report.java
 type Report struct {
-	Date string
+	Date time.Time
 	GarageId string
 	//todo there is an error when i run make proto
 	//WriteInstanceID byzcoin.InstanceID

@@ -2,6 +2,7 @@ package ch.epfl.dedis.template;
 
 import ch.epfl.dedis.byzcoin.transaction.Argument;
 import ch.epfl.dedis.template.proto.CarProto;
+import com.google.protobuf.InvalidProtocolBufferException;
 
 
 import java.util.Arrays;
@@ -26,6 +27,10 @@ public class SecretData {
         mileage = sd.getMileage();
         warranty = sd.getWarranty();
         checkNote = sd.getChecknote();
+    }
+
+    public SecretData(byte[] data) throws InvalidProtocolBufferException {
+        this(CarProto.SecretData.parseFrom(data));
     }
 
     /**

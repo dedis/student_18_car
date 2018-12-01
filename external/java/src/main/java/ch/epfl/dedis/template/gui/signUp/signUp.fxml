@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.effect.*?>
+<?import javafx.scene.text.*?>
+<?import java.lang.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.layout.AnchorPane?>
+
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ch.epfl.dedis.template.gui.signUp.SignUpController">
+   <children>
+      <Label fx:id="roleLabel" layoutX="54.0" layoutY="75.0" text="Please choose your role:" />
+      <RadioButton fx:id="ownerRButton" layoutX="54.0" layoutY="106.0" mnemonicParsing="false" onAction="#onSelection" text="Car Owner">
+         <toggleGroup>
+            <ToggleGroup fx:id="roleGroup" />
+         </toggleGroup>
+      </RadioButton>
+      <RadioButton fx:id="garageRButton1" layoutX="54.0" layoutY="133.0" mnemonicParsing="false" onAction="#onSelection" text="Garage" toggleGroup="$roleGroup" />
+      <RadioButton fx:id="readerRButton1" layoutX="54.0" layoutY="160.0" mnemonicParsing="false" onAction="#onSelection" text="History Reader" toggleGroup="$roleGroup" />
+      <Button fx:id="submitButton" layoutX="50.0" layoutY="350.0" mnemonicParsing="false" onAction="#signUp" prefHeight="27.0" prefWidth="151.0" text="Submit" />
+      <Label fx:id="VINLabel" layoutX="53.0" layoutY="201.0" text="Please insert the VIN:" />
+      <TextField fx:id="vinField" layoutX="51.0" layoutY="228.0" prefHeight="27.0" prefWidth="246.0" />
+      <Label layoutX="256.0" layoutY="23.0" text="Sign Up">
+         <font>
+            <Font size="18.0" />
+         </font>
+      </Label>
+      <Label fx:id="emailLabel" layoutX="51.0" layoutY="268.0" text="Please insert your email address:" />
+      <TextField fx:id="emailField" layoutX="50.0" layoutY="292.0" prefHeight="27.0" prefWidth="246.0" />
+   </children>
+</AnchorPane>

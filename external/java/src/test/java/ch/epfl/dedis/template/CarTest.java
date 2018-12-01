@@ -2,17 +2,12 @@ package ch.epfl.dedis.template;
 
 import ch.epfl.dedis.integration.TestServerController;
 import ch.epfl.dedis.integration.TestServerInit;
-import ch.epfl.dedis.lib.Roster;
-import ch.epfl.dedis.lib.SkipblockId;
 import ch.epfl.dedis.byzcoin.ByzCoinRPC;
 import ch.epfl.dedis.calypso.*;
 import ch.epfl.dedis.byzcoin.Proof;
 import ch.epfl.dedis.lib.darc.*;
 import ch.epfl.dedis.lib.exception.CothorityCommunicationException;
-import ch.epfl.dedis.lib.exception.CothorityException;
-import ch.epfl.dedis.byzcoin.InstanceId;
 import ch.epfl.dedis.byzcoin.contracts.DarcInstance;
-import com.google.protobuf.InvalidProtocolBufferException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -93,7 +88,7 @@ public class CarTest {
         adminDarcInstance = genesisDarcInstance.spawnDarcAndWait(adminDarc, genAdmin, 10);
 
 
-
+        //Main.main();
 
         //Spawning user darc with invoke:evolve and _sign rules
         user = new SignerEd25519();

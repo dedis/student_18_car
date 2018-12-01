@@ -6,14 +6,12 @@ import ch.epfl.dedis.byzcoin.transaction.Instruction;
 import ch.epfl.dedis.byzcoin.transaction.Invoke;
 import ch.epfl.dedis.lib.Hex;
 import ch.epfl.dedis.calypso.*;
+import ch.epfl.dedis.lib.darc.*;
 import ch.epfl.dedis.lib.exception.CothorityCryptoException;
 import ch.epfl.dedis.lib.exception.CothorityException;
 import ch.epfl.dedis.lib.exception.CothorityNotFoundException;
 import ch.epfl.dedis.byzcoin.*;
 import ch.epfl.dedis.byzcoin.contracts.DarcInstance;
-import ch.epfl.dedis.lib.darc.Request;
-import ch.epfl.dedis.lib.darc.Signature;
-import ch.epfl.dedis.lib.darc.Signer;
 import ch.epfl.dedis.template.proto.CarProto;
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.slf4j.Logger;
@@ -77,9 +75,7 @@ public class  CarInstance {
         this.bc = bc;
         List<Argument> args = new ArrayList<>();
         args.add(c.toArgument());
-        System.out.println("in car instance constructor");
         Proof p = darcInstance.spawnInstanceAndWait("car", signer, args, 10);
-        System.out.println("in car instance constructor: after proof");
         update(p);
     }
 
@@ -134,13 +130,13 @@ public class  CarInstance {
      * TODO: allow for evolution if the expression has more than one identity.
      *
      * @param reports the reports to be added to the list of reports in the car instance.
-     * @param owner     must have its identity in the "invoke:addReport" rule
+     * @param signer     must have its identity in the "invoke:addReport" rule
      * @param pos       position of the instruction in the ClientTransaction
      * @param len       total number of instructions in the ClientTransaction
      * @return Instruction to be sent to ByzCoin
      * @throws CothorityCryptoException
      */
-    public Instruction addReportInstruction(List<Report> reports, Signer owner, int pos, int len) throws CothorityCryptoException {
+    public Instruction addReportInstruction(List<Report> reports, Signer signer, int pos, int len) throws CothorityCryptoException {
         List<Argument> args = new ArrayList<>();
         for (Report rep : reports) {
             args.add(rep.toArgument());
@@ -149,9 +145,9 @@ public class  CarInstance {
         Instruction inst = new Instruction(instance.getId(), Instruction.genNonce(), pos, len, inv);
         try {
             Request r = new Request(instance.getDarcId(), "invoke:addReport", inst.hash(),
-                    Arrays.asList(owner.getIdentity()), null);
+                    Arrays.asList(signer.getIdentity()), null);
             logger.info("Signing: {}", Hex.printHexBinary(r.hash()));
-            Signature sign = new Signature(owner.sign(r.hash()), owner.getIdentity());
+            Signature sign = new Signature(signer.sign(r.hash()), signer.getIdentity());
             inst.setSignatures(Arrays.asList(sign));
         } catch (Signer.SignRequestRejectedException e) {
             throw new CothorityCryptoException(e.getMessage());
@@ -218,22 +214,15 @@ public class  CarInstance {
         return instance;
     }
 
-
-    //todo:    public static DarcInstance fromByzCoin(ByzCoinRPC bc, DarcId baseId) throws CothorityException {
-    //        return fromByzCoin(bc, new InstanceId(baseId.getId()));
-    //    }
-    //
-    //    /**
-    //     * Instantiates a new DarcInstance given a working ByzCoin service and
-    //     * an instanceId. This instantiator will contact byzcoin and try to get
-    //     * the current darcInstance. If the instance is not found, or is not of
-    //     * contractId "darc", an exception will be thrown.
-    //     *
-    //     * @param bc is a running ByzCoin ledger
-    //     * @param d  of which the base id will be taken to search in ByzCoin
-    //     * @return DarcInstance representing the latest version of the given baseId
-    //     * @throws CothorityException if somethings goes wrong
-    //     */
-    //    public static DarcInstance fromByzCoin(ByzCoinRPC bc, Darc d) throws CothorityException {
-    //        return fromByzCoin(bc, d.getBaseId());
+    /**
+     * Fetches an already existing writeInstance from Calypso and returns it.
+     *
+     * @param calypso the Calypso instance
+     * @param carInstId the car instance to load
+     * @return the new carInstance
+     * @throws CothorityException if something goes wrong
+     */
+    public static CarInstance fromCalypso(CalypsoRPC calypso, InstanceId carInstId) throws CothorityException {
+        return new CarInstance(calypso, carInstId);
+    }
 }

@@ -20,7 +20,7 @@
             <Label fx:id="aslogoLabel" layoutX="96.0" layoutY="7.0" prefHeight="17.0" prefWidth="25.0" />
          </children>
       </Pane>
-      <MenuButton fx:id="roleButton" layoutX="245.0" layoutY="173.0" mnemonicParsing="false" prefHeight="27.0" prefWidth="111.0" text="Identity" />
+      <SplitMenuButton fx:id="roleButton" layoutX="245.0" layoutY="173.0" mnemonicParsing="false" prefHeight="27.0" prefWidth="111.0" text="Identity" />
       <Button fx:id="submitRoleButton" layoutX="246.0" layoutY="277.0" mnemonicParsing="false" prefHeight="27.0" prefWidth="111.0" text="OK" />
    </children>
 </AnchorPane>

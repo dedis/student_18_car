@@ -1,7 +1,5 @@
 package byzcoin
 
-import "time"
-
 // PROTOSTART
 // package car;
 // type :time.Time:sfixed64
@@ -12,7 +10,7 @@ import "time"
 
 //todo Report.java
 type Report struct {
-	Date time.Time
+	Date string
 	GarageId string
 	//todo there is an error when i run make proto
 	//WriteInstanceID byzcoin.InstanceID

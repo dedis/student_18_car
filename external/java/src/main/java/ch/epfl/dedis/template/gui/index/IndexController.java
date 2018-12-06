@@ -11,7 +11,7 @@ import java.io.File;
 import java.net.URL;
 import java.util.ResourceBundle;
 
-import static ch.epfl.dedis.template.gui.ByzSetup.getAdminName;
+import static ch.epfl.dedis.template.gui.ByzSetup.*;
 
 public class IndexController implements Initializable {
 
@@ -23,11 +23,10 @@ public class IndexController implements Initializable {
     private Label aslogoLabel;
 
     @FXML
-    private MenuButton roleButton;
+    public MenuButton roleButton;
 
     @FXML
     private Button submitRoleButton;
-
 
 
     @Override
@@ -45,15 +44,64 @@ public class IndexController implements Initializable {
             ImageView viewAS = new ImageView(aslogo);
             aslogoLabel.setGraphic(viewAS);
 
-            MenuItem item = new MenuItem(getAdminName());
-            item.setOnAction(this::onRoleChange);
-            roleButton.getItems().add(item);
+            MenuItem adminItem = new MenuItem(getAdminName());
+            adminItem.setOnAction(this::onRoleChange);
+            roleButton.getItems().add(adminItem);
 
+            if(getUserName()!=null)
+            {
+                MenuItem userItem = new MenuItem(getUserName());
+                userItem.setOnAction(this::onRoleChange);
+                roleButton.getItems().add(userItem);
+            }
+
+            if(getReaderName()!=null)
+            {
+                MenuItem readerItem = new MenuItem(getReaderName());
+                readerItem.setOnAction(this::onRoleChange);
+                roleButton.getItems().add(readerItem);
+            }
+
+            if(getGarageName()!=null)
+            {
+                MenuItem garageItem = new MenuItem(getGarageName());
+                garageItem.setOnAction(this::onRoleChange);
+                roleButton.getItems().add(garageItem);
+            }
+
+            submitRoleButton.setStyle("-fx-background-color: #001155; -fx-text-fill: white");
+            //submitRoleButton.setStyle("-fx-text-fill: white");
+            submitRoleButton.setOnAction(this::onRoleSubmit);
         }
         catch (Exception e) {
-            System.out.println(e.toString());
+            e.printStackTrace();
         }
+    }
 
+    private void onRoleSubmit(ActionEvent event)
+    {
+        try{
+            if (roleButton.getText().equals(getAdminName())){
+
+                Main.window.setScene(Main.adminScene);
+            }
+            else if (roleButton.getText().equals(getUserName())){
+
+                Main.window.setScene(Main.userScreenScene);
+            }
+            else if(roleButton.getText().equals(getReaderName())){
+
+                Main.window.setScene(Main.readHistoryScene);
+            }
+            else if(roleButton.getText().equals(getGarageName())){
+
+                Main.window.setScene(Main.addReportScene);
+            }
+            roleButton.setText("Identity");
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private void onRoleChange(ActionEvent event) {

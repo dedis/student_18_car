@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static ch.epfl.dedis.template.gui.ByzSetup.*;
 import static java.time.temporal.ChronoUnit.MILLIS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -36,6 +37,7 @@ public class CarTest {
     static Signer user;
     static Darc userDarc;
     static DarcInstance userDarcInstance;
+    static Signer garage;
 
     static Darc readerDarc;
     static DarcInstance readerDarcInstance;
@@ -43,6 +45,12 @@ public class CarTest {
     static DarcInstance garageDarcInstance;
     static Darc carDarc;
     static DarcInstance carDarcInstance;
+
+    static Darc carReaderDarc;
+    static DarcInstance carReaderDarcInstance;
+    static Darc carGarageDarc;
+    static DarcInstance carGarageDarcInstance;
+
 
     private final static Logger logger = LoggerFactory.getLogger(CarTest.class);
     private TestServerController testInstanceController;
@@ -56,6 +64,7 @@ public class CarTest {
      */
     @BeforeEach
     void initAll() throws Exception {
+//        testInstanceController = TestServerInit.getInstanceManual();
         testInstanceController = TestServerInit.getInstance();
 
         //creating genesis darc
@@ -64,7 +73,7 @@ public class CarTest {
 
 
         //bc = new ByzCoinRPC(testInstanceController.getRoster(), genesisDarc, Duration.of(500, MILLIS));
-        calypso = new CalypsoRPC(testInstanceController.getRoster(), genesisDarc, Duration.of(500, MILLIS));
+        calypso = new CalypsoRPC(testInstanceController.getRoster(), genesisDarc, Duration.of(1000, MILLIS));
 
         if (!calypso.checkLiveness()) {
             throw new CothorityCommunicationException("liveness check failed");
@@ -74,12 +83,6 @@ public class CarTest {
 
         genesisDarcInstance = calypso.getGenesisDarcInstance();
 
-        //genesisDarcInstance = DarcInstance.fromByzCoin(bc, genesisDarc);
-        //genesisDarcInstance = DarcInstance.fromByzCoin(bc, genesisDarc.getId());
-        //genesisDarcInstance = new DarcInstance(bc, genesisDarc, genAdmin, Darc newDarc)
-
-
-
 
         //Spawning admin darc with the spawn:darc rule for a new signer.
         admin = new SignerEd25519();
@@ -88,33 +91,43 @@ public class CarTest {
         adminDarcInstance = genesisDarcInstance.spawnDarcAndWait(adminDarc, genAdmin, 10);
 
 
-        //Main.main();
-
         //Spawning user darc with invoke:evolve and _sign rules
         user = new SignerEd25519();
         userDarc = new Darc(Arrays.asList(user.getIdentity()), Arrays.asList(user.getIdentity()), "User darc".getBytes());
         userDarcInstance = adminDarcInstance.spawnDarcAndWait(userDarc, admin, 10);
 
 
+        Darc ownerDarc = new Darc(Arrays.asList(userDarc.getIdentity()),
+                Arrays.asList(userDarc.getIdentity()), "Car Owner darc".getBytes());
+        DarcInstance ownerDarcInstance = adminDarcInstance.spawnDarcAndWait(ownerDarc, admin, 10);
+
 
         //Spawning reader darc with invoke:evolve and _sign rules
-        readerDarc = new Darc(Arrays.asList(userDarc.getIdentity()), Arrays.asList(userDarc.getIdentity()), "Reader darc".getBytes());
-        readerDarcInstance = adminDarcInstance.spawnDarcAndWait(readerDarc, admin, 10);
+        carReaderDarc = new Darc(Arrays.asList(ownerDarc.getIdentity()),
+                Arrays.asList(ownerDarc.getIdentity()), "Car Reader darc".getBytes());
+        carReaderDarcInstance = adminDarcInstance.spawnDarcAndWait(carReaderDarc, admin, 10);
 
+//        spawning garage and garage darc
+//        garage = new SignerEd25519();
+//        garageDarc = new Darc(Arrays.asList(garage.getIdentity()),
+//                Arrays.asList(garage.getIdentity()), "Garage darc".getBytes());
+//        garageDarcInstance = adminDarcInstance.spawnDarcAndWait(garageDarc, admin, 10);
 
 
         //Spawning garage darc with invoke:evolve and _sign rules
-        garageDarc = new Darc(Arrays.asList(userDarc.getIdentity()), Arrays.asList(userDarc.getIdentity()), "Garage darc".getBytes());
-        garageDarcInstance = adminDarcInstance.spawnDarcAndWait(garageDarc, admin, 10);
+        carGarageDarc = new Darc(Arrays.asList(ownerDarc.getIdentity()),
+                Arrays.asList(ownerDarc.getIdentity()), " Car Garage darc".getBytes());
+//        carGarageDarc.addIdentity("_sign", garageDarc.getIdentity(), Rules.OR);
 
+        carGarageDarcInstance = adminDarcInstance.spawnDarcAndWait(carGarageDarc, admin, 10);
 
 
         //Spawning car darc with spawn:car, invoke:addReport, spawn:calypsoWrite and spawn:calypsoRead rules
         Rules rs = new Rules();
         rs.addRule("spawn:car", adminDarc.getIdentity().toString().getBytes());
-        rs.addRule("invoke:addReport", garageDarc.getIdentity().toString().getBytes());
-        rs.addRule("spawn:calypsoWrite", garageDarc.getIdentity().toString().getBytes());
-        rs.addRule("spawn:calypsoRead", readerDarc.getIdentity().toString().getBytes());
+        rs.addRule("invoke:addReport", carGarageDarc.getIdentity().toString().getBytes());
+        rs.addRule("spawn:calypsoWrite", carGarageDarc.getIdentity().toString().getBytes());
+        rs.addRule("spawn:calypsoRead", carReaderDarc.getIdentity().toString().getBytes());
         carDarc = new Darc(rs, "Car darc".getBytes());
         carDarcInstance = adminDarcInstance.spawnDarcAndWait(carDarc, admin, 10);
 
@@ -138,7 +151,7 @@ public class CarTest {
      * Finally it updates the key/value pair to a new value.
      *
      * @throws Exception
-//     */
+    //     */
 //    @Test
 //    void addReader() throws Exception {
 //
@@ -150,7 +163,6 @@ public class CarTest {
 //    }
 
 
-
     /**
      * Evolves the darc to give spawn-rights to create a keyValue contract, as well as the right to invoke the
      * update command from the contract.
@@ -159,36 +171,47 @@ public class CarTest {
      *
      * @throws Exception
      */
-   @Test
+    @Test
     void spawnCar() throws Exception {
 
-       //spawn
-       Car c = new Car("123A456");
-       CarInstance ci = new CarInstance(calypso, carDarcInstance, admin, c);
-       System.out.println("Car Instance:");
-       System.out.println(ci.getInstance().getId().toString());
-       Car c2 = new Car (ci.getInstance().getData());
-       assertEquals(c, c2);
+        //spawn
+        Car c = new Car("123A456");
+        CarInstance ci = new CarInstance(calypso, carDarcInstance, admin, c);
+        System.out.println("Car Instance:");
+        System.out.println(ci.getInstance().getId().toString());
+        Car c2 = new Car(ci.getInstance().getData());
+        assertEquals(c, c2);
     }
 
     @Test
     void spawnCarAddAndReadReport() throws Exception {
 
-        //spawn
+        //spawn car
         Car c = new Car("123A46");
         CarInstance ci = new CarInstance(calypso, carDarcInstance, admin, c);
         System.out.println("Car Instance:");
         System.out.println(ci.getInstance().getId().toString());
-        Car c2 = new Car (ci.getInstance().getData());
+        Car c2 = new Car(ci.getInstance().getData());
         assertEquals(c, c2);
 
-        //update
+        //spawn garage darc
+        garage = new SignerEd25519();
+        garageDarc = new Darc(Arrays.asList(garage.getIdentity()),
+                Arrays.asList(garage.getIdentity()), "Garage darc".getBytes());
+        garageDarcInstance = adminDarcInstance.spawnDarcAndWait(garageDarc, admin, 10);
+
+        // evolve the car garage Darc
+        carGarageDarc.addIdentity(Darc.RuleSignature, garageDarc.getIdentity(), Rules.OR);
+        carGarageDarcInstance.evolveDarcAndWait(carGarageDarc, user, 10);
+
+        //update car
         SecretData secret = new SecretData("1090", "100 000", true, "tires changed");
         Document doc = new Document(secret.toProto().toByteArray(), 16, "sdf".getBytes(), carDarc.getBaseId());
         //WriteData wd = new WriteData(calypso.getLTS(), secret.getBytes(),
         //      new Encryption.keyIv(16).getKeyMaterial() , null,carDarc.getBaseId());
         WriteInstance wi = new WriteInstance(calypso,
                 carDarc.getBaseId(), Arrays.asList(user), doc.getWriteData(calypso.getLTS()));
+
         Proof p = calypso.getProof(wi.getInstance().getId());
         assertTrue(p.matches());
 

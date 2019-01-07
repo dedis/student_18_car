@@ -24,6 +24,7 @@ public class SignUpResultController implements Initializable {
     public void initialize(URL location, ResourceBundle resources){
 
             backButton.setOnAction(this::switchScene);
+            backButton.setStyle("-fx-background-color: #001155; -fx-text-fill: white");
     }
 
     private void switchScene(ActionEvent event) {
@@ -41,6 +42,14 @@ public class SignUpResultController implements Initializable {
             URL urlUserScreen = new File("src/main/java/ch/epfl/dedis/template/gui/userScreen/userScreen.fxml").toURL();
             Parent rootUserScreen = FXMLLoader.load(urlUserScreen);
             Main.userScreenScene = new Scene(rootUserScreen, 600, 400);
+
+            URL urlAddReport = new File("src/main/java/ch/epfl/dedis/template/gui/addReport/addReport.fxml").toURL();
+            Parent rootAddReport = FXMLLoader.load(urlAddReport);
+            Main.addReportScene = new Scene(rootAddReport, 600, 400);
+
+            URL urlReadHistory = new File("src/main/java/ch/epfl/dedis/template/gui/readHistory/readHistory.fxml").toURL();
+            Parent rootReadHistory = FXMLLoader.load(urlReadHistory);
+            Main.readHistoryScene = new Scene(rootReadHistory, 600, 400);
 
 
             Main.window.setScene(iScene);

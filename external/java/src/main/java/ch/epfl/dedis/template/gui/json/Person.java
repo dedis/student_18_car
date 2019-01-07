@@ -17,4 +17,10 @@ public class Person {
     public  Person(){
     }
 
+    public Person(Person p){
+        this.name = p.name;
+        this.darc = p.darc;
+        this.signer = p.signer;
+    }
+
 }

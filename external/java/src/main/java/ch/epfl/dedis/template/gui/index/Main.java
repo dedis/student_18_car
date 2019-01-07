@@ -27,6 +27,7 @@ public class Main extends Application {
 
     public static ByzC byzC;
     public static CalypsoRPC calypsoRPC;
+    public static String homePath = System.getProperty("user.home");
 
 
 //    public static void main(String[] args) {
@@ -85,8 +86,6 @@ public class Main extends Application {
         primaryStage.show();
 
     }
-
-
 
 }
 

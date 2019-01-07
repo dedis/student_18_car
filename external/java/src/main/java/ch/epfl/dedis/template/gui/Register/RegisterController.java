@@ -21,13 +21,13 @@ import javafx.scene.control.*;
 
 import java.io.File;
 import java.net.URL;
-import java.util.Arrays;
-import java.util.ResourceBundle;
+import java.util.*;
 
 import static ch.epfl.dedis.byzcoin.contracts.DarcInstance.fromByzCoin;
 //import static ch.epfl.dedis.template.gui.ByzSetup.getAdmin;
 import static ch.epfl.dedis.template.gui.ByzSetup.*;
 import static ch.epfl.dedis.template.gui.index.Main.calypsoRPC;
+import static ch.epfl.dedis.template.gui.index.Main.homePath;
 
 public class RegisterController implements Initializable {
 
@@ -63,6 +63,7 @@ public class RegisterController implements Initializable {
     BooleanProperty disableReader = new SimpleBooleanProperty();
     BooleanProperty disableGarage = new SimpleBooleanProperty();
 
+    ObjectMapper mapper = new ObjectMapper();
 
     @Override
     public void initialize(URL location, ResourceBundle resources){
@@ -82,19 +83,26 @@ public class RegisterController implements Initializable {
         createGarageButton.disableProperty().bind(disableGarage);
 
         createUserButton.setOnAction(this::createUser);
-
         createReaderButton.setOnAction(this::createReader);
-
         createGarageButton.setOnAction(this::createGarage);
-
         createCarButton.setOnAction(this::createCar);
 
+        createUserButton.setStyle("-fx-background-color: #001155; -fx-text-fill: white");
+        createCarButton.setStyle("-fx-background-color: #001155; -fx-text-fill: white");
+        createReaderButton.setStyle("-fx-background-color: #001155; -fx-text-fill: white");
+        createGarageButton.setStyle("-fx-background-color: #001155; -fx-text-fill: white");
+
         try{
-            if(getUserName()!=null)
+            //populate choose owner button
+            File userFile = new File(homePath + "/json/user.json");
+            if(userFile.exists())
             {
-                MenuItem userItem = new MenuItem(getUserName());
-                userItem.setOnAction(this::onRoleChange);
-                chooseOwnerButton.getItems().add(userItem);
+                HashMap<String, Person> userMap = mapper.readValue(userFile, HashMap.class);
+                for (HashMap.Entry<String, Person> entry : userMap.entrySet()) {
+                    MenuItem userItem = new MenuItem(entry.getKey());
+                    userItem.setOnAction(this::onRoleChange);
+                    chooseOwnerButton.getItems().add(userItem);
+                }
             }
         }
         catch (Exception e){
@@ -111,21 +119,9 @@ public class RegisterController implements Initializable {
     private void createUser(ActionEvent event) {
 
         try{
-            Darc adminDarc = getAdminDarc();
-            DarcInstance adminDarcInstance = fromByzCoin(calypsoRPC, adminDarc.getId());
-
-            SignerEd25519 user = new SignerEd25519();
-            Darc userDarc = new Darc(Arrays.asList(user.getIdentity()), Arrays.asList(user.getIdentity()), "User darc".getBytes());
-            DarcInstance userDarcInstance = adminDarcInstance.spawnDarcAndWait(userDarc, getAdmin(), 10);
-
-            Person userPerson = new Person(createUserText.getText(), userDarc.toProto().toByteArray(), user.serialize());
-
-            ObjectMapper mapper = new ObjectMapper();
-            mapper.writeValue(new File("/Users/Iva/json/user.json"), userPerson);
-
+            createPerson("user", createUserText.getText());
             createUserText.setText("");
             Main.window.setScene(Main.signUpResultScene);
-
         }
         catch (Exception e){
             e.printStackTrace();
@@ -134,18 +130,7 @@ public class RegisterController implements Initializable {
 
     private void createReader(ActionEvent event) {
         try{
-            Darc adminDarc = getAdminDarc();
-            DarcInstance adminDarcInstance = fromByzCoin(calypsoRPC, adminDarc.getId());
-
-            SignerEd25519 reader = new SignerEd25519();
-            Darc userDarc = new Darc(Arrays.asList(reader.getIdentity()), Arrays.asList(reader.getIdentity()), "User darc".getBytes());
-            DarcInstance userDarcInstance = adminDarcInstance.spawnDarcAndWait(userDarc, getAdmin(), 10);
-
-            Person readerPerson = new Person(createReaderText.getText(), userDarc.toProto().toByteArray(), reader.serialize());
-
-            ObjectMapper mapper = new ObjectMapper();
-            mapper.writeValue(new File("/Users/Iva/json/reader.json"), readerPerson);
-
+            createPerson("reader", createReaderText.getText());
             createReaderText.setText("");
             Main.window.setScene(Main.signUpResultScene);
         }
@@ -156,21 +141,7 @@ public class RegisterController implements Initializable {
 
     private void createGarage(ActionEvent event) {
         try{
-            //getting the admin details from the local file
-            Darc adminDarc = getAdminDarc();
-            DarcInstance adminDarcInstance = fromByzCoin(calypsoRPC, adminDarc.getId());
-
-            SignerEd25519 garage = new SignerEd25519();
-            Darc userDarc = new Darc(Arrays.asList(garage.getIdentity()),
-                    Arrays.asList(garage.getIdentity()), "User darc".getBytes());
-            DarcInstance userDarcInstance = adminDarcInstance.spawnDarcAndWait(userDarc, getAdmin(), 10);
-
-            Person garagePerson = new Person(createGarageText.getText(),
-                    userDarc.toProto().toByteArray(), garage.serialize());
-
-            ObjectMapper mapper = new ObjectMapper();
-            mapper.writeValue(new File("/Users/Iva/json/garage.json"), garagePerson);
-
+            createPerson("garage", createGarageText.getText());
             createGarageText.setText("");
             Main.window.setScene(Main.signUpResultScene);
         }
@@ -183,24 +154,26 @@ public class RegisterController implements Initializable {
         try{
             //todo: check the owner from the VIN and set the initial rules with that owner
 
+            String path = homePath + "/json/car.json";
+
             //getting the admin details from the local file
             Darc adminDarc = getAdminDarc();
             DarcInstance adminDarcInstance = fromByzCoin(calypsoRPC, adminDarc.getId());
 
             //Spawning owner darc with invoke:evolve and _sign rules
-            Darc ownerDarc = new Darc(Arrays.asList(getUserDarc().getIdentity()),
-                    Arrays.asList(getUserDarc().getIdentity()), "User darc".getBytes());
-            DarcInstance ownerDarcInstance = adminDarcInstance.spawnDarcAndWait(ownerDarc, getAdmin(), 10);
+            Darc ownerDarc = new Darc(Arrays.asList(getPersonDarc(chooseOwnerButton.getText(), "user").getIdentity()),
+                    Arrays.asList(getPersonDarc(chooseOwnerButton.getText(), "user").getIdentity()), "Car Owner darc".getBytes());
+            adminDarcInstance.spawnDarcAndWait(ownerDarc, getAdmin(), 10);
 
             //Spawning reader darc with invoke:evolve and _sign rules
-            Darc readerDarc = new Darc(Arrays.asList(getUserDarc().getIdentity()),
-                    Arrays.asList(getUserDarc().getIdentity()), "Reader darc".getBytes());
-            DarcInstance readerDarcInstance = adminDarcInstance.spawnDarcAndWait(readerDarc, getAdmin(), 10);
+            Darc readerDarc = new Darc(Arrays.asList(ownerDarc.getIdentity()),
+                    Arrays.asList(ownerDarc.getIdentity()), "Car Reader darc".getBytes());
+            adminDarcInstance.spawnDarcAndWait(readerDarc, getAdmin(), 10);
 
             //Spawning garage darc with invoke:evolve and _sign rules
-            Darc garageDarc = new Darc(Arrays.asList(getUserDarc().getIdentity()),
-                    Arrays.asList(getUserDarc().getIdentity()), "Garage darc".getBytes());
-            DarcInstance garageDarcInstance = adminDarcInstance.spawnDarcAndWait(garageDarc, getAdmin(), 10);
+            Darc garageDarc = new Darc(Arrays.asList(ownerDarc.getIdentity()),
+                    Arrays.asList(ownerDarc.getIdentity()), "Car Garage darc".getBytes());
+            adminDarcInstance.spawnDarcAndWait(garageDarc, getAdmin(), 10);
 
             //Spawning car darc with spawn:car, invoke:addReport, spawn:calypsoWrite and spawn:calypsoRead rules
             Rules rs = new Rules();
@@ -214,16 +187,27 @@ public class RegisterController implements Initializable {
             //Creating car instance from the given VIN
             Car c = new Car(createCarText.getText());
             CarInstance ci = new CarInstance(calypsoRPC, carDarcInstance, getAdmin(), c);
-            System.out.println(ci.getId());
 
             CarJson carJson = new CarJson(createCarText.getText(), carDarc.toProto().toByteArray(),
                     ownerDarc.toProto().toByteArray(), readerDarc.toProto().toByteArray(),
                     garageDarc.toProto().toByteArray(), ci.getId().getId());
 
-            ObjectMapper mapper = new ObjectMapper();
-            mapper.writeValue(new File("/Users/Iva/json/car.json"), carJson);
-
-            System.out.println(getCarInstanceId());
+            File carFile = new File(path);
+            if(!carFile.exists()) {
+                HashMap<String, CarJson> carMap = new HashMap<>();
+                carMap.put(carJson.VIN, carJson);
+                mapper.writeValue(carFile, carMap);
+            }
+            else {
+                HashMap<String, CarJson> carMap = mapper.readValue(carFile, HashMap.class);
+                if(!carMap.containsKey(carJson.VIN)){
+                    carMap.put(carJson.VIN, carJson);
+                    mapper.writeValue(carFile, carMap);
+                }
+                else{
+                    throw new Exception("A car with the provided VIN already exists");
+                }
+            }
 
             createGarageText.setText("");
             Main.window.setScene(Main.signUpResultScene);
@@ -233,27 +217,42 @@ public class RegisterController implements Initializable {
         }
     }
 
+    /**
+     * @param role can be either user, reader or garage
+     *
+     */
+    private void createPerson(String role, String name) throws Exception{
+        String path = homePath + "/json/" + role + ".json";
 
-    /*@FXML
-    void onSelection(ActionEvent event){
-        RadioButton r = (RadioButton)event.getTarget();
+        Darc adminDarc = getAdminDarc();
+        DarcInstance adminDarcInstance = fromByzCoin(calypsoRPC, adminDarc.getId());
 
-        if (r.isSelected())
-        {
-            System.out.println(r.getText());
+        SignerEd25519 signer = new SignerEd25519();
+        Darc personDarc = new Darc(Arrays.asList(signer.getIdentity()), Arrays.asList(signer.getIdentity()), (role + " darc").getBytes());
+        adminDarcInstance.spawnDarcAndWait(personDarc, getAdmin(), 10);
+
+        Person person = new Person(name, personDarc.toProto().toByteArray(), signer.serialize());
+
+        //if the file doesn't exist, we need to create a new list of users/readers/garages
+        //otherwise take the list from the file and update it
+        File personFile = new File(path);
+        if(!personFile.exists()) {
+            HashMap<String, Person> personMap = new HashMap<>();
+            personMap.put(person.name, person);
+            mapper.writeValue(personFile, personMap);
+        }
+        else {
+            HashMap<String, Person> personMap = mapper.readValue(personFile, HashMap.class);
+            if(!personMap.containsKey(person.name)){
+                personMap.put(person.name, person);
+                mapper.writeValue(personFile, personMap);
+            }
+            else{
+                throw new Exception("The name is already taken");
+            }
         }
     }
 
 
-    @FXML
-    void signUp(ActionEvent event) {
-        RadioButton selectedRole = (RadioButton) roleGroup.getSelectedToggle();
-
-        if (selectedRole.getText() == "Garage")
-        {
-
-        }
-
-    }*/
 
 }

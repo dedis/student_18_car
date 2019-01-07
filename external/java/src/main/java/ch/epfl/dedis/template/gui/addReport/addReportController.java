@@ -11,7 +11,10 @@ import ch.epfl.dedis.lib.darc.Darc;
 import ch.epfl.dedis.template.CarInstance;
 import ch.epfl.dedis.template.Report;
 import ch.epfl.dedis.template.SecretData;
+import ch.epfl.dedis.template.gui.index.IndexController;
 import ch.epfl.dedis.template.gui.index.Main;
+import ch.epfl.dedis.template.gui.json.CarJson;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -20,15 +23,14 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 
+import java.io.File;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.ResourceBundle;
+import java.util.*;
 
 import static ch.epfl.dedis.byzcoin.contracts.DarcInstance.fromByzCoin;
 import static ch.epfl.dedis.template.gui.ByzSetup.*;
 import static ch.epfl.dedis.template.gui.index.Main.calypsoRPC;
+import static ch.epfl.dedis.template.gui.index.Main.homePath;
 import static ch.epfl.dedis.template.gui.index.Main.signUpResultScene;
 
 public class addReportController implements Initializable {
@@ -64,11 +66,18 @@ public class addReportController implements Initializable {
                 notesTextArea.getText().trim().isEmpty(), notesTextArea.textProperty())));
 
         try{
-            if(getVIN()!=null)
+            ObjectMapper mapper = new ObjectMapper();
+
+            File carFile = new File(homePath + "/json/car.json");
+            if(carFile.exists())
             {
-                MenuItem VINItem = new MenuItem(getVIN());
-                VINItem.setOnAction(this::onVINChange);
-                chooseVINButton.getItems().add(VINItem);
+                HashMap<String, CarJson> carMap = mapper.readValue(carFile, HashMap.class);
+
+                for (HashMap.Entry<String, CarJson> entry : carMap.entrySet()) {
+                    MenuItem VINItem = new MenuItem(entry.getKey());
+                    VINItem.setOnAction(this::onVINChange);
+                    chooseVINButton.getItems().add(VINItem);
+                }
             }
         }
         catch (Exception e){
@@ -76,6 +85,7 @@ public class addReportController implements Initializable {
         }
 
         submitButton.setOnAction(this::submitReport);
+        submitButton.setStyle("-fx-background-color: #001155; -fx-text-fill: white");
     }
 
     private void submitReport(ActionEvent event) {
@@ -88,18 +98,23 @@ public class addReportController implements Initializable {
                 mileageTextField.getText(), hasWarranty, notesTextArea.getText());
         try{
 
-            Document doc = new Document(secret.toProto().toByteArray(), 16, null, getCarDarc().getBaseId());
+            Document doc = new Document(secret.toProto().toByteArray(), 16,
+                    null, getCarDarc(chooseVINButton.getText()).getBaseId());
 
-            WriteInstance w = new WriteInstance(calypsoRPC, getCarDarc().getId(), Arrays.asList(getGarage()), doc.getWriteData(calypsoRPC.getLTS()));
+            WriteInstance w = new WriteInstance(calypsoRPC, getCarDarc(chooseVINButton.getText()).getId(),
+                    Arrays.asList(getPersonSigner(IndexController.role,
+                            "garage")), doc.getWriteData(calypsoRPC.getLTS()));
             Proof p = calypsoRPC.getProof(w.getInstance().getId());
 
             List<Report> reports = new ArrayList<>();
-            Report report = new Report("15.02.1994", getGarageName(), w.getInstance().getId().getId());
+            Report report = new Report(new Date().toString(),
+                    IndexController.role, w.getInstance().getId().getId());
             reports.add(report);
 
 
-            CarInstance ci = CarInstance.fromCalypso(calypsoRPC,  getCarInstanceId());
-            ci.addReportAndWait(reports, getGarage(), 10);
+            CarInstance ci = CarInstance.fromCalypso(calypsoRPC,  getCarInstanceId(chooseVINButton.getText()));
+            ci.addReportAndWait(reports,
+                    getPersonSigner(IndexController.role, "garage"), 10);
         }
         catch (Exception e){
             e.printStackTrace();

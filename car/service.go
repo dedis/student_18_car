@@ -1,4 +1,4 @@
-package byzcoin
+package car
 
 import (
 	"github.com/dedis/cothority/byzcoin"
@@ -24,10 +24,15 @@ type Service struct {
 	*onet.ServiceProcessor
 }
 
+//todo API endpoint
+//in the
+
 func newService(c *onet.Context) (onet.Service, error) {
 	s := &Service{
 		ServiceProcessor: onet.NewServiceProcessor(c),
 	}
 	byzcoin.RegisterContract(c, ContractCarID, ContractCar)
+
+	//register handlers
 	return s, nil
 }

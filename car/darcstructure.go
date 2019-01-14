@@ -1,4 +1,4 @@
-package byzcoin
+package car
 
 import (
 	"bytes"

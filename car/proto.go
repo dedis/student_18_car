@@ -1,4 +1,4 @@
-package byzcoin
+package car
 
 // PROTOSTART
 // package car;
@@ -21,10 +21,14 @@ type Car struct {
 	Vin string
 	Reports []Report
 }
-//todo SecretData.java
+
 type SecretData struct {
 	ECOScore string
 	Mileage string
 	Warranty bool
 	CheckNote string
 }
+
+//send prop
+//list prop
+//repl

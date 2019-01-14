@@ -32,7 +32,7 @@ import (
 	"strings"
 
 	// Import your service:
-	_ "github.com/dedis/student_18_car/byzcoin"
+	_ "github.com/dedis/student_18_car/car"
 	_ "github.com/dedis/student_18_car/service"
 	"gopkg.in/urfave/cli.v1"
 	"path"

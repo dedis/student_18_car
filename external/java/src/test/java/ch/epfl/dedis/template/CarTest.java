@@ -8,6 +8,7 @@ import ch.epfl.dedis.byzcoin.Proof;
 import ch.epfl.dedis.lib.darc.*;
 import ch.epfl.dedis.lib.exception.CothorityCommunicationException;
 import ch.epfl.dedis.byzcoin.contracts.DarcInstance;
+import ch.epfl.dedis.template.gui.index.IndexController;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -18,7 +19,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static ch.epfl.dedis.byzcoin.contracts.DarcInstance.fromByzCoin;
 import static ch.epfl.dedis.template.gui.ByzSetup.*;
+import static ch.epfl.dedis.template.gui.index.Main.calypsoRPC;
 import static java.time.temporal.ChronoUnit.MILLIS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -50,6 +53,8 @@ public class CarTest {
     static DarcInstance carReaderDarcInstance;
     static Darc carGarageDarc;
     static DarcInstance carGarageDarcInstance;
+    static Darc carOwnerDarc;
+    static DarcInstance carOwnerDarcInstance;
 
 
     private final static Logger logger = LoggerFactory.getLogger(CarTest.class);
@@ -71,15 +76,11 @@ public class CarTest {
         genAdmin = new SignerEd25519();
         genesisDarc = ByzCoinRPC.makeGenesisDarc(genAdmin, testInstanceController.getRoster());
 
-
-        //bc = new ByzCoinRPC(testInstanceController.getRoster(), genesisDarc, Duration.of(500, MILLIS));
         calypso = new CalypsoRPC(testInstanceController.getRoster(), genesisDarc, Duration.of(1000, MILLIS));
 
         if (!calypso.checkLiveness()) {
             throw new CothorityCommunicationException("liveness check failed");
         }
-        System.out.println(genesisDarc.toString());
-        //bc.update();
 
         genesisDarcInstance = calypso.getGenesisDarcInstance();
 
@@ -97,26 +98,20 @@ public class CarTest {
         userDarcInstance = adminDarcInstance.spawnDarcAndWait(userDarc, admin, 10);
 
 
-        Darc ownerDarc = new Darc(Arrays.asList(userDarc.getIdentity()),
+        carOwnerDarc = new Darc(Arrays.asList(userDarc.getIdentity()),
                 Arrays.asList(userDarc.getIdentity()), "Car Owner darc".getBytes());
-        DarcInstance ownerDarcInstance = adminDarcInstance.spawnDarcAndWait(ownerDarc, admin, 10);
+        carOwnerDarcInstance = adminDarcInstance.spawnDarcAndWait(carOwnerDarc, admin, 10);
 
 
         //Spawning reader darc with invoke:evolve and _sign rules
-        carReaderDarc = new Darc(Arrays.asList(ownerDarc.getIdentity()),
-                Arrays.asList(ownerDarc.getIdentity()), "Car Reader darc".getBytes());
+        carReaderDarc = new Darc(Arrays.asList(carOwnerDarc.getIdentity()),
+                Arrays.asList(carOwnerDarc.getIdentity()), "Car Reader darc".getBytes());
         carReaderDarcInstance = adminDarcInstance.spawnDarcAndWait(carReaderDarc, admin, 10);
-
-//        spawning garage and garage darc
-//        garage = new SignerEd25519();
-//        garageDarc = new Darc(Arrays.asList(garage.getIdentity()),
-//                Arrays.asList(garage.getIdentity()), "Garage darc".getBytes());
-//        garageDarcInstance = adminDarcInstance.spawnDarcAndWait(garageDarc, admin, 10);
 
 
         //Spawning garage darc with invoke:evolve and _sign rules
-        carGarageDarc = new Darc(Arrays.asList(ownerDarc.getIdentity()),
-                Arrays.asList(ownerDarc.getIdentity()), " Car Garage darc".getBytes());
+        carGarageDarc = new Darc(Arrays.asList(carOwnerDarc.getIdentity()),
+                Arrays.asList(carOwnerDarc.getIdentity()), " Car Garage darc".getBytes());
 //        carGarageDarc.addIdentity("_sign", garageDarc.getIdentity(), Rules.OR);
 
         carGarageDarcInstance = adminDarcInstance.spawnDarcAndWait(carGarageDarc, admin, 10);
@@ -238,6 +233,54 @@ public class CarTest {
         assertTrue(doc.equals(doc2));
 
     }
+
+    @Test
+    void changeOwner() throws Exception {
+
+        //spawn car
+        Car c = new Car("123A46");
+        CarInstance ci = new CarInstance(calypso, carDarcInstance, admin, c);
+        System.out.println("Car Instance:");
+        System.out.println(ci.getInstance().getId().toString());
+        Car c2 = new Car(ci.getInstance().getData());
+        assertEquals(c, c2);
+
+        System.out.println("User Darc");
+        System.out.println(userDarc.toString());
+        System.out.println("Car Owner Darc");
+        System.out.println(carOwnerDarc.toString());
+
+        Signer newOwner = new SignerEd25519();
+        Darc newOwnerDarc = new Darc(Arrays.asList(newOwner.getIdentity()),
+                Arrays.asList(newOwner.getIdentity()), "New Owner darc".getBytes());
+        carOwnerDarc.setRule("_sign", newOwnerDarc.getIdentity().toString().getBytes());
+        carOwnerDarc.setRule("invoke:evolve", newOwnerDarc.getIdentity().toString().getBytes());
+        carOwnerDarcInstance.evolveDarcAndWait(carOwnerDarc, user, 10);
+
+        System.out.println();
+        System.out.println("New User Darc");
+        System.out.println(newOwnerDarc.toString());
+        System.out.println("Car Owner Darc");
+        System.out.println(carOwnerDarc.toString());
+
+    }
+
+    @Test
+    void changeDarcRule() throws Exception {
+
+    }
+
+
+
+
+//    Darc carOwnerDarc = getCarOwnerDarc(chooseVinButton.getText());
+//    DarcInstance carOwnerDarcInstance = fromByzCoin(calypsoRPC, carOwnerDarc.getId());
+//    Darc newOwnerDarc = getPersonDarc(changeOwnerButton.getText(), "user");
+//                    carOwnerDarc.setRule("_sign", newOwnerDarc.getIdentity().toProto().toByteArray());
+//                    carOwnerDarc.setRule("invoke:evolve", newOwnerDarc.getIdentity().toProto().toByteArray());
+//                    carOwnerDarcInstance.evolveDarcAndWait(carOwnerDarc,
+//    getPersonSigner(IndexController.role, "user"), 10);
+//                    System.out.println(carOwnerDarc.toString());
 
 
     /**

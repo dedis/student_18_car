@@ -18,21 +18,16 @@ import static ch.epfl.dedis.template.gui.ByzSetup.*;
 
 public class Main extends Application {
 
-    public static Scene indexScene, adminScene, signUpResultScene, addReportScene, userScreenScene, readHistoryScene;
+    public static Scene indexScene, adminScene, signUpResultScene, addReportScene, userScreenScene,
+            readHistoryScene, errorScene;
     public static Stage window;
-
-    public static String currentUser;
-    public static String currentReader;
-    public static String currentGarage;
 
     public static ByzC byzC;
     public static CalypsoRPC calypsoRPC;
     public static String homePath = System.getProperty("user.home");
 
+    public static String errorMsg = "";
 
-//    public static void main(String[] args) {
-//        launch(args);
-//    }
     public static void main() {
 
     }
@@ -79,12 +74,28 @@ public class Main extends Application {
         Parent rootReadHistory = FXMLLoader.load(urlReadHistory);
         readHistoryScene = new Scene(rootReadHistory, 600, 400);
 
+        URL urlErrorScene = new File("src/main/java/ch/epfl/dedis/template/gui/errorScene/errorScene.fxml").toURL();
+        Parent rootErrorScene = FXMLLoader.load(urlErrorScene);
+        errorScene = new Scene(rootErrorScene, 600, 400);
+
         //Parent root = FXMLLoader.load(getClass().getResource("index.fxml"));
         primaryStage.setTitle("Car Maintenance History");
         primaryStage.setScene(indexScene);
 
         primaryStage.show();
 
+    }
+
+    public static void loadErrorScene(){
+        try {
+            URL urlErrorScene = new File("src/main/java/ch/epfl/dedis/template/gui/errorScene/errorScene.fxml").toURL();
+            Parent rootErrorScene = FXMLLoader.load(urlErrorScene);
+            errorScene = new Scene(rootErrorScene, 600, 400);
+        }
+        catch (Exception e) {
+            errorMsg = e.toString();
+            e.printStackTrace();
+        }
     }
 
 }

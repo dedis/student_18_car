@@ -7,6 +7,7 @@ import ch.epfl.dedis.lib.darc.Signer;
 import ch.epfl.dedis.lib.darc.SignerEd25519;
 import ch.epfl.dedis.template.Car;
 import ch.epfl.dedis.template.CarInstance;
+import ch.epfl.dedis.template.gui.errorScene.ErrorSceneController;
 import ch.epfl.dedis.template.gui.index.Main;
 import ch.epfl.dedis.template.gui.json.CarJson;
 import ch.epfl.dedis.template.gui.json.Person;
@@ -106,6 +107,9 @@ public class RegisterController implements Initializable {
             }
         }
         catch (Exception e){
+            Main.errorMsg = e.toString();
+            Main.loadErrorScene();
+            Main.window.setScene(Main.errorScene);
             e.printStackTrace();
         }
     }
@@ -124,6 +128,9 @@ public class RegisterController implements Initializable {
             Main.window.setScene(Main.signUpResultScene);
         }
         catch (Exception e){
+            Main.errorMsg = e.toString();
+            Main.loadErrorScene();
+            Main.window.setScene(Main.errorScene);
             e.printStackTrace();
         }
     }
@@ -135,6 +142,9 @@ public class RegisterController implements Initializable {
             Main.window.setScene(Main.signUpResultScene);
         }
         catch (Exception e){
+            Main.errorMsg = e.toString();
+            Main.loadErrorScene();
+            Main.window.setScene(Main.errorScene);
             e.printStackTrace();
         }
     }
@@ -146,6 +156,9 @@ public class RegisterController implements Initializable {
             Main.window.setScene(Main.signUpResultScene);
         }
         catch (Exception e){
+            Main.errorMsg = e.toString();
+            Main.loadErrorScene();
+            Main.window.setScene(Main.errorScene);
             e.printStackTrace();
         }
     }
@@ -163,17 +176,17 @@ public class RegisterController implements Initializable {
             //Spawning owner darc with invoke:evolve and _sign rules
             Darc ownerDarc = new Darc(Arrays.asList(getPersonDarc(chooseOwnerButton.getText(), "user").getIdentity()),
                     Arrays.asList(getPersonDarc(chooseOwnerButton.getText(), "user").getIdentity()), "Car Owner darc".getBytes());
-            adminDarcInstance.spawnDarcAndWait(ownerDarc, getAdmin(), 10);
+            adminDarcInstance.spawnDarcAndWait(ownerDarc, getAdmin(), 5);
 
             //Spawning reader darc with invoke:evolve and _sign rules
             Darc readerDarc = new Darc(Arrays.asList(ownerDarc.getIdentity()),
                     Arrays.asList(ownerDarc.getIdentity()), "Car Reader darc".getBytes());
-            adminDarcInstance.spawnDarcAndWait(readerDarc, getAdmin(), 10);
+            adminDarcInstance.spawnDarcAndWait(readerDarc, getAdmin(), 5);
 
             //Spawning garage darc with invoke:evolve and _sign rules
             Darc garageDarc = new Darc(Arrays.asList(ownerDarc.getIdentity()),
                     Arrays.asList(ownerDarc.getIdentity()), "Car Garage darc".getBytes());
-            adminDarcInstance.spawnDarcAndWait(garageDarc, getAdmin(), 10);
+            adminDarcInstance.spawnDarcAndWait(garageDarc, getAdmin(), 5);
 
             //Spawning car darc with spawn:car, invoke:addReport, spawn:calypsoWrite and spawn:calypsoRead rules
             Rules rs = new Rules();
@@ -213,6 +226,9 @@ public class RegisterController implements Initializable {
             Main.window.setScene(Main.signUpResultScene);
         }
         catch (Exception e){
+            Main.errorMsg = e.toString();
+            Main.loadErrorScene();
+            Main.window.setScene(Main.errorScene);
             e.printStackTrace();
         }
     }

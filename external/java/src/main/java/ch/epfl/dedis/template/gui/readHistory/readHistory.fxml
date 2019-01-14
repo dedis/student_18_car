@@ -15,7 +15,8 @@
          </font>
       </Label>
       <MenuButton fx:id="chooseVINButton" layoutX="60.0" layoutY="97.0" mnemonicParsing="false" prefHeight="27.0" prefWidth="139.0" text="Choose VIN" />
-      <TextArea fx:id="historyTextArea" layoutX="340.0" layoutY="97.0" prefHeight="269.0" prefWidth="200.0" promptText="History" />
+      <TextArea fx:id="historyTextArea" layoutX="250.0" layoutY="97.0" prefHeight="269.0" prefWidth="290.0" promptText="History" />
       <Button fx:id="readHistoryButton" layoutX="61.0" layoutY="218.0" mnemonicParsing="false" prefHeight="27.0" prefWidth="139.0" text="Request History" />
+      <Button fx:id="goBackButton" layoutX="60.0" layoutY="339.0" mnemonicParsing="false" prefHeight="27.0" prefWidth="139.0" text="Go Back" />
    </children>
 </AnchorPane>

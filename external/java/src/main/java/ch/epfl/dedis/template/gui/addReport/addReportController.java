@@ -11,6 +11,7 @@ import ch.epfl.dedis.lib.darc.Darc;
 import ch.epfl.dedis.template.CarInstance;
 import ch.epfl.dedis.template.Report;
 import ch.epfl.dedis.template.SecretData;
+import ch.epfl.dedis.template.gui.errorScene.ErrorSceneController;
 import ch.epfl.dedis.template.gui.index.IndexController;
 import ch.epfl.dedis.template.gui.index.Main;
 import ch.epfl.dedis.template.gui.json.CarJson;
@@ -55,10 +56,8 @@ public class addReportController implements Initializable {
 
     BooleanProperty disable = new SimpleBooleanProperty();
 
-
     @Override
     public void initialize(URL location, ResourceBundle resources){
-
 
         disable.bind(Bindings.createBooleanBinding(() ->
                 scoreTextField.getText().trim().isEmpty(), scoreTextField.textProperty()).or(Bindings.createBooleanBinding(() ->
@@ -79,12 +78,16 @@ public class addReportController implements Initializable {
                     chooseVINButton.getItems().add(VINItem);
                 }
             }
+            submitButton.setOnAction(this::submitReport);
         }
         catch (Exception e){
+            Main.errorMsg = e.toString();
+            Main.loadErrorScene();
+            Main.window.setScene(Main.errorScene);
             e.printStackTrace();
         }
 
-        submitButton.setOnAction(this::submitReport);
+
         submitButton.setStyle("-fx-background-color: #001155; -fx-text-fill: white");
     }
 
@@ -115,14 +118,19 @@ public class addReportController implements Initializable {
             CarInstance ci = CarInstance.fromCalypso(calypsoRPC,  getCarInstanceId(chooseVINButton.getText()));
             ci.addReportAndWait(reports,
                     getPersonSigner(IndexController.role, "garage"), 10);
+
+            Main.window.setScene(signUpResultScene);
+            scoreTextField.setText("");
+            mileageTextField.setText("");
         }
         catch (Exception e){
+            Main.errorMsg = e.toString();
+            Main.loadErrorScene();
+            Main.window.setScene(Main.errorScene);
             e.printStackTrace();
         }
 
-        Main.window.setScene(signUpResultScene);
-        scoreTextField.setText("");
-        mileageTextField.setText("");
+
     }
 
     private void onVINChange(ActionEvent event) {

@@ -1,9 +1,13 @@
 package ch.epfl.dedis.template.gui.index;
 
+import ch.epfl.dedis.template.gui.errorScene.ErrorSceneController;
 import ch.epfl.dedis.template.gui.json.Person;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import javafx.event.ActionEvent;
+import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import  javafx.fxml.FXML;
 import javafx.scene.image.Image;
@@ -83,6 +87,9 @@ public class IndexController implements Initializable {
             submitRoleButton.setOnAction(this::onRoleSubmit);
         }
         catch (Exception e) {
+            Main.errorMsg = e.toString();
+            Main.loadErrorScene();
+            Main.window.setScene(Main.errorScene);
             e.printStackTrace();
         }
     }
@@ -101,6 +108,9 @@ public class IndexController implements Initializable {
                 Main.window.setScene(Main.adminScene);
             }
             else if (userFile.exists() && mapper.readValue(userFile, HashMap.class).containsKey(roleButton.getText())){
+//                URL urlUserScreen = new File("src/main/java/ch/epfl/dedis/template/gui/userScreen/userScreen.fxml").toURL();
+//                Parent rootUserScreen = FXMLLoader.load(urlUserScreen);
+//                Main.userScreenScene = new Scene(rootUserScreen, 600, 400);
                 Main.window.setScene(Main.userScreenScene);
             }
             else if(readerFile.exists() && mapper.readValue(readerFile, HashMap.class).containsKey(roleButton.getText())){
@@ -112,6 +122,9 @@ public class IndexController implements Initializable {
             roleButton.setText("Identity");
         }
         catch (Exception e) {
+            Main.errorMsg = e.toString();
+            Main.loadErrorScene();
+            Main.window.setScene(Main.errorScene);
             e.printStackTrace();
         }
     }

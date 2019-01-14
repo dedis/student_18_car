@@ -51,10 +51,16 @@ public class SignUpResultController implements Initializable {
             Parent rootReadHistory = FXMLLoader.load(urlReadHistory);
             Main.readHistoryScene = new Scene(rootReadHistory, 600, 400);
 
+            URL urlErrorScene = new File("src/main/java/ch/epfl/dedis/template/gui/errorScene/errorScene.fxml").toURL();
+            Parent rootErrorScene = FXMLLoader.load(urlErrorScene);
+            Main.errorScene = new Scene(rootErrorScene, 600, 400);
 
             Main.window.setScene(iScene);
         }
         catch (Exception e){
+            Main.errorMsg = e.toString();
+            Main.loadErrorScene();
+            Main.window.setScene(Main.errorScene);
             e.printStackTrace();
         }
     }

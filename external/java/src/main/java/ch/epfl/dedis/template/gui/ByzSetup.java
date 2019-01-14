@@ -14,6 +14,8 @@ import ch.epfl.dedis.lib.darc.SignerFactory;
 import ch.epfl.dedis.lib.proto.DarcProto;
 import ch.epfl.dedis.lib.proto.OnetProto;
 import ch.epfl.dedis.lib.proto.SkipchainProto;
+import ch.epfl.dedis.template.gui.errorScene.ErrorSceneController;
+import ch.epfl.dedis.template.gui.index.Main;
 import ch.epfl.dedis.template.gui.json.ByzC;
 import ch.epfl.dedis.template.gui.json.CarJson;
 import ch.epfl.dedis.template.gui.json.Person;
@@ -100,6 +102,9 @@ public class ByzSetup {
             }
         }
         catch (Exception e) {
+            Main.errorMsg = e.toString();
+            Main.loadErrorScene();
+            Main.window.setScene(Main.errorScene);
             e.printStackTrace();
             return null;
         }
@@ -118,6 +123,9 @@ public class ByzSetup {
             return roster;
         }
         catch (Exception e){
+            Main.errorMsg = e.toString();
+            Main.loadErrorScene();
+            Main.window.setScene(Main.errorScene);
             e.printStackTrace();
             return null;
         }
@@ -146,6 +154,9 @@ public class ByzSetup {
             return ltsId;
         }
         catch (Exception e){
+            Main.errorMsg = e.toString();
+            Main.loadErrorScene();
+            Main.window.setScene(Main.errorScene);
             e.printStackTrace();
             return null;
         }
@@ -243,6 +254,29 @@ public class ByzSetup {
 
             if (carMap.containsKey(VIN)){
                 DarcProto.Darc darcProto = DarcProto.Darc.parseFrom(carMap.get(VIN).readerDarc);
+                Darc darc = new Darc(darcProto);
+                return  darc;
+            }
+            else
+                throw new Exception("No car with that VIN exists");
+        }
+        else
+            throw new Exception("No car with that VIN exists");
+    }
+
+
+    public static Darc getCarOwnerDarc(String VIN) throws  Exception{
+
+        ObjectMapper mapper = new ObjectMapper();
+        File carFile = new File(homePath + "/json/car.json");
+        if(carFile.exists()){
+
+            TypeReference<HashMap<String, CarJson>> typeRef
+                    = new TypeReference<HashMap<String, CarJson>>() {};
+            HashMap<String, CarJson> carMap = mapper.readValue(carFile, typeRef);
+
+            if (carMap.containsKey(VIN)){
+                DarcProto.Darc darcProto = DarcProto.Darc.parseFrom(carMap.get(VIN).ownerDarc);
                 Darc darc = new Darc(darcProto);
                 return  darc;
             }

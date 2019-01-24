@@ -25,7 +25,6 @@ type Service struct {
 }
 
 //todo API endpoint
-//in the
 
 func newService(c *onet.Context) (onet.Service, error) {
 	s := &Service{
@@ -33,6 +32,7 @@ func newService(c *onet.Context) (onet.Service, error) {
 	}
 	byzcoin.RegisterContract(c, ContractCarID, ContractCar)
 
-	//register handlers
+	//todo register handlers
 	return s, nil
 }
+

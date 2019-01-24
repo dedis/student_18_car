@@ -61,7 +61,7 @@ func TestService_DarcStructure(t *testing.T) {
 	t.Log("Evolved Reader Darc 2")
 	t.Log(evolved_darc3.String())
 
-	evolved_darc4, err := s.removeSigner(t, evolved_darc3, newReader3, user)
+	evolved_darc4, err := s.removeSigner(evolved_darc3, newReader3, user)
 	require.Nil(t,err)
 	t.Log("Evolved Reader Darc 3")
 	t.Log(evolved_darc4.String())

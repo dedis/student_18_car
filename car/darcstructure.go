@@ -5,7 +5,6 @@ import (
 	"errors"
 	"github.com/dedis/kyber/suites"
 	"strings"
-	"testing"
 	"time"
 
 	"github.com/dedis/cothority/byzcoin"
@@ -38,7 +37,6 @@ func (s *ser) spawnAdminDarc(admin darc.Signer)  (*darc.Darc, error){
 	if err != nil {
 		return nil, err
 	}
-
 	return darcAdmin, err
 }
 
@@ -171,7 +169,7 @@ func (s *ser) spawnCarDarc( darcAdmin *darc.Darc, admin darc.Signer,
 	return darcCar, err
 }
 
-func (s *ser) removeSigner(t *testing.T, d *darc.Darc,
+func (s *ser) removeSigner(d *darc.Darc,
 	signerToBeRemoved darc.Signer, signer darc.Signer) (*darc.Darc, error){
 
 	if !(bytes.Equal(d.Description, []byte("Reader darc")) || bytes.Equal(d.Description, []byte("Garage darc"))) {
@@ -185,7 +183,7 @@ func (s *ser) removeSigner(t *testing.T, d *darc.Darc,
 	}
 	//updating the sign expression
 	oldExp := d.Rules.GetSignExpr()
-	exp, err := removeSignerFromExpr(t, oldExp, signerToBeRemoved)
+	exp, err := removeSignerFromExpr(oldExp, signerToBeRemoved)
 	if err != nil {
 		return nil, err
 	}
@@ -215,7 +213,7 @@ func (s *ser) removeSigner(t *testing.T, d *darc.Darc,
 }
 
 
-func removeSignerFromExpr(t *testing.T, oldExp expression.Expr, removedMember darc.Signer) (expression.Expr, error){
+func removeSignerFromExpr(oldExp expression.Expr, removedMember darc.Signer) (expression.Expr, error){
 
 	exp := ""
 	var err error
@@ -266,8 +264,6 @@ func removeSignerFromExpr(t *testing.T, oldExp expression.Expr, removedMember da
 
 		if (strings.Contains(otherPart, temp_after)) {
 			otherPart := strings.Replace(otherPart, temp_after, "",-1)
-			t.Log("here")
-			t.Log(otherPart)
 			if !(strings.Contains(otherPart, "|")) {
 				otherPart = strings.Trim(otherPart,"(")
 				otherPart = strings.Trim(otherPart,")")

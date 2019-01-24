@@ -8,15 +8,12 @@ package car
 // option java_outer_classname = "CarProto";
 
 
-//todo Report.java
 type Report struct {
 	Date string
 	GarageId string
-	//todo there is an error when i run make proto
-	//WriteInstanceID byzcoin.InstanceID
 	WriteInstanceID []byte
 }
-//todo Car.java and CarInstance.java
+
 type Car struct {
 	Vin string
 	Reports []Report
@@ -29,6 +26,8 @@ type SecretData struct {
 	CheckNote string
 }
 
-//send prop
-//list prop
-//repl
+
+
+//todo send prop
+//todo list prop
+//todo repl

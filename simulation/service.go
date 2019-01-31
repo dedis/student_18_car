@@ -4,11 +4,13 @@ import (
 	"errors"
 	"github.com/BurntSushi/toml"
 	"github.com/dedis/cothority/byzcoin"
+	"github.com/dedis/cothority/calypso"
 	"github.com/dedis/cothority/darc"
-	"github.com/dedis/cothority/darc/expression"
+	"github.com/dedis/kyber/util/random"
 	"github.com/dedis/onet"
 	"github.com/dedis/onet/log"
 	"github.com/dedis/onet/simul/monitor"
+	"github.com/dedis/student_18_car/car"
 	"time"
 )
 
@@ -20,7 +22,6 @@ func init() {
 	onet.SimulationRegister("SimulationCarService", NewSimulationService)
 }
 
-// SimulationService only holds the BFTree simulation
 type SimulationService struct {
 	onet.SimulationBFTree
 	Transactions  int
@@ -66,10 +67,20 @@ func (s *SimulationService) Node(config *onet.SimulationConfig) error {
 	return s.SimulationBFTree.Node(config)
 }
 
-
 // Run is used on the destination machines and runs a number of
 // rounds
 func (s *SimulationService) Run(config *onet.SimulationConfig) error {
+
+	var carDarcs []darc.Darc
+	var carInstances []byzcoin.InstanceID
+	var writeInstances []byzcoin.InstanceID
+	var wData car.SecretData
+	wData.ECOScore = "2310"
+	wData.Mileage = "100 000"
+	wData.Warranty = true
+
+	// Measuring the time it takes to setup the blockchain
+	bChainSetup := monitor.NewTimeMeasure("bChainSetup")
 	size := config.Tree.Size()
 	log.Lvl2("Size is:", size, "rounds:", s.Rounds, "transactions:", s.Transactions)
 	signer := darc.NewSignerEd25519(nil, nil)
@@ -92,8 +103,17 @@ func (s *SimulationService) Run(config *onet.SimulationConfig) error {
 	if err != nil {
 		return errors.New("couldn't create genesis block: " + err.Error())
 	}
+	//todo is this the way i should use calypso???
+	calypsoClient := calypso.NewClient(c)
+	lts, err := calypsoClient.CreateLTS()
+	if err != nil {
+		return errors.New("couldn't create genesis block: " + err.Error())
+	}
+	bChainSetup.Record()
 
-	//create a darc for the Admin(not the genesis one) to be able to spawn new darcs (reader/garage/car...)
+	// Measuring the time it takes to prepare the system
+	prepare := monitor.NewTimeMeasure("prepare")
+	// Spawn an Admin Darc from the genesis darc
 	admin := darc.NewSignerEd25519(nil, nil)
 	ctx, adminDarc, err := spawnDarcTxn(gm.GenesisDarc, admin)
 	if err != nil {
@@ -111,7 +131,7 @@ func (s *SimulationService) Run(config *onet.SimulationConfig) error {
 		return errors.New("couldn't create admin darc: " + err.Error())
 	}
 
-	//create user darc, which will be used as reader, owner and garage for simplicity
+	// Create user darc, which will be used as reader, owner and garage for simplicity
 	user := darc.NewSignerEd25519(nil, nil)
 	ctx, userDarc, err := spawnDarcTxn(adminDarc, user)
 	if err != nil {
@@ -129,88 +149,178 @@ func (s *SimulationService) Run(config *onet.SimulationConfig) error {
 		return errors.New("couldn't create user darc: " + err.Error())
 	}
 
-
-	//create cars
-	for round := 0; round < s.Rounds; round++ {
-		log.Lvl1("Starting round", round)
-		roundM := monitor.NewTimeMeasure("round")
-
-		if s.Transactions < 3 {
-			log.Warn("The 'send_sum' measurement will be very skewed, as the last transaction")
-			log.Warn("is not measured.")
-		}
-
-		txs := s.Transactions / s.BatchSize
-		insts := s.BatchSize
-		log.Lvlf1("Sending %d transactions with %d instructions each", txs, insts)
-		tx := byzcoin.ClientTransaction{}
-		// Inverse the prepare/send loop, so that the last transaction is not sent,
-		// but can be sent in the 'confirm' phase using 'AddTransactionAndWait'.
-		counterID := 0
-		for t := 0; t < txs; t++ {
-			if len(tx.Instructions) > 0 {
-				log.Lvlf1("Sending transaction %d", t)
-				send := monitor.NewTimeMeasure("send")
-				_, err = c.AddTransaction(tx)
-				if err != nil {
-					return errors.New("couldn't add transfer transaction: " + err.Error())
-				}
-				send.Record()
-				tx.Instructions = byzcoin.Instructions{}
-			}
-
-			prepare := monitor.NewTimeMeasure("prepare")
-			for i := 0; i < insts; i++ {
-
-				inst,_,err := spawnCarDarc( &adminDarc,
-					&userDarc, counterID)
-				if err != nil {
-					return errors.New("instruction error: " + err.Error())
-				}
-				tx.Instructions = append(tx.Instructions, inst)
-				err = byzcoin.SignInstruction(&tx.Instructions[i], adminDarc.GetBaseID(), admin)
-				if err != nil {
-					return errors.New("signature error: " + err.Error())
-				}
-			}
-			prepare.Record()
-		}
-		// Confirm the transaction by sending the last transaction using
-		// AddTransactionAndWait. There is a small error in measurement,
-		// as we're missing one of the AddTransaction call in the measurements.
-		confirm := monitor.NewTimeMeasure("confirm")
-		log.Lvl1("Sending last transaction and waiting")
-		_, err = c.AddTransactionAndWait(tx, 20)
-		if err != nil {
-			return errors.New("while adding transaction and waiting: " + err.Error())
-		}
-		//todo should i check some proof for any car?
-		//proof, err := c.GetProof(coinAddr2.Slice())
-		//if err != nil {
-		//	return errors.New("couldn't get proof for transaction: " + err.Error())
-		//}
-		//_, v0, _, _, err := proof.Proof.KeyValue()
-		//if err != nil {
-		//	return errors.New("proof doesn't hold transaction: " + err.Error())
-		//}
-		//var account byzcoin.Coin
-		//err = protobuf.Decode(v0, &account)
-		//if err != nil {
-		//	return errors.New("couldn't decode account: " + err.Error())
-		//}
-		//log.Lvlf1("Account has %d", account.Value)
-		//if account.Value != uint64(s.Transactions*(round+1)) {
-		//	return errors.New("account has wrong amount")
-		//}
-		confirm.Record()
-		roundM.Record()
-
-		// This sleep is needed to wait for the propagation to finish
-		// on all the nodes. Otherwise the simulation manager
-		// (runsimul.go in onet) might close some nodes and cause
-		// skipblock propagation to fail.
-		time.Sleep(blockInterval)
+	//create #(s.Transactions) car darcs and store them in []carDarcs
+	if s.Transactions < 3 {
+		log.Warn("The 'send_sum' measurement will be very skewed, as the last transaction")
+		log.Warn("is not measured.")
 	}
+
+	txs := s.Transactions / s.BatchSize
+	insts := s.BatchSize
+	log.Lvlf1("Sending %d transactions with %d instructions each", txs, insts)
+	tx := byzcoin.ClientTransaction{}
+	// Inverse the prepare/send loop, so that the last transaction is not sent,
+	// but can be sent in the 'confirm' phase using 'AddTransactionAndWait'.
+	counterID := 0
+	for t := 0; t < txs; t++ {
+
+		if len(tx.Instructions) > 0 {
+			log.Lvlf1("Sending transaction %d", t)
+			_, err = c.AddTransaction(tx)
+			if err != nil {
+				return errors.New("couldn't add transaction: " + err.Error())
+			}
+			tx.Instructions = byzcoin.Instructions{}
+		}
+		for i := 0; i < insts; i++ {
+			counterID++
+			inst, carDarc, err := spawnCarDarc(&adminDarc,
+				&userDarc, counterID)
+			if err != nil {
+				return errors.New("instruction error: " + err.Error())
+			}
+			carDarcs = append(carDarcs, *carDarc)
+			tx.Instructions = append(tx.Instructions, inst)
+			err = byzcoin.SignInstruction(&tx.Instructions[i], adminDarc.GetBaseID(), admin)
+			if err != nil {
+				return errors.New("signature error: " + err.Error())
+			}
+		}
+	}
+	log.Lvl1("Sending last transaction and waiting")
+	_, err = c.AddTransactionAndWait(tx, 20)
+	if err != nil {
+		return errors.New("while adding transaction and waiting: " + err.Error())
+	}
+
+
+
+	//create #(s.Transactions) car Instances and store them in []carInstances
+	log.Lvlf1("Sending %d transactions with %d instructions each", txs, insts)
+	tx = byzcoin.ClientTransaction{}
+	for t := 0; t < txs; t++ {
+		if len(tx.Instructions) > 0 {
+			log.Lvlf1("Sending transaction %d", t)
+			_, err = c.AddTransaction(tx)
+			if err != nil {
+				return errors.New("couldn't add transaction: " + err.Error())
+			}
+			tx.Instructions = byzcoin.Instructions{}
+		}
+		for i := 0; i < insts; i++ {
+			counterID++
+			c := car.NewCar(string(counterID))
+			instr, err := createCarInstanceInstr(c, &carDarcs[t*insts+i])
+			if err != nil {
+				return errors.New("instruction error: " + err.Error())
+			}
+			carInstances = append(carInstances, instr.DeriveID(""))
+			tx.Instructions = append(tx.Instructions, instr)
+			err = byzcoin.SignInstruction(&tx.Instructions[i], carDarcs[t*insts+i].GetBaseID(), admin)
+			if err != nil {
+				return errors.New("signature error: " + err.Error())
+			}
+		}
+	}
+	// Confirm the transaction by sending the last transaction using
+	// AddTransactionAndWait. There is a small error in measurement,
+	// as we're missing one of the AddTransaction call in the measurements.
+	log.Lvl1("Sending last transaction and waiting")
+	_, err = c.AddTransactionAndWait(tx, 20)
+	if err != nil {
+		return errors.New("while adding transaction and waiting: " + err.Error())
+	}
+
+	prepare.Record()
+
+
+	addReports := monitor.NewTimeMeasure("addReports")
+	//create #(s.Transactions) car Instances and store them in []writeInstances
+	log.Lvlf1("Sending %d transactions with %d instructions each", txs, insts)
+	tx = byzcoin.ClientTransaction{}
+	for t := 0; t < txs; t++ {
+		if len(tx.Instructions) > 0 {
+			log.Lvlf1("Sending transaction %d", t)
+			_, err = c.AddTransaction(tx)
+			if err != nil {
+				return errors.New("couldn't add transaction: " + err.Error())
+			}
+			tx.Instructions = byzcoin.Instructions{}
+		}
+		for i := 0; i < insts; i++ {
+			counterID++
+			key := random.Bits(128, true, random.New())
+			instr, err := addWrite(key, wData,
+				&carDarcs[t*insts+i], *lts)
+			if err != nil {
+				return errors.New("instruction error: " + err.Error())
+			}
+			writeInstances = append(writeInstances, instr.DeriveID(""))
+			tx.Instructions = append(tx.Instructions, instr)
+			err = byzcoin.SignInstruction(&tx.Instructions[i], carDarcs[t*insts+i].GetBaseID(), user)
+			if err != nil {
+				return errors.New("signature error: " + err.Error())
+			}
+		}
+	}
+	// Confirm the transaction by sending the last transaction using
+	// AddTransactionAndWait. There is a small error in measurement,
+	// as we're missing one of the AddTransaction call in the measurements.
+	log.Lvl1("Sending last transaction and waiting")
+	_, err = c.AddTransactionAndWait(tx, 20)
+	if err != nil {
+		return errors.New("while adding transaction and waiting: " + err.Error())
+	}
+
+
+	//add a report for each car instance
+	log.Lvlf1("Sending %d transactions with %d instructions each", txs, insts)
+	tx = byzcoin.ClientTransaction{}
+	for t := 0; t < txs; t++ {
+		if len(tx.Instructions) > 0 {
+			log.Lvlf1("Sending transaction %d", t)
+			_, err = c.AddTransaction(tx)
+			if err != nil {
+				return errors.New("couldn't add transaction: " + err.Error())
+			}
+			tx.Instructions = byzcoin.Instructions{}
+		}
+		for i := 0; i < insts; i++ {
+			instruction, err := addReport(carInstances[t*insts+i], writeInstances[t*insts+i], user)
+			if err != nil {
+				return errors.New("instruction error: " + err.Error())
+			}
+			tx.Instructions = append(tx.Instructions, instruction)
+			err = byzcoin.SignInstruction(&tx.Instructions[i], carDarcs[t*insts+i].GetBaseID(), user)
+			if err != nil {
+				return errors.New("signature error: " + err.Error())
+			}
+		}
+	}
+	// Confirm the transaction by sending the last transaction using
+	// AddTransactionAndWait. There is a small error in measurement,
+	// as we're missing one of the AddTransaction call in the measurements.
+	log.Lvl1("Sending last transaction and waiting")
+	_, err = c.AddTransactionAndWait(tx, 20)
+	if err != nil {
+		return errors.New("while adding transaction and waiting: " + err.Error())
+	}
+	addReports.Record()
+
+
+
+	readReports := monitor.NewTimeMeasure("readReports")
+
+	readReports.Record()
+
+
+	// This sleep is needed to wait for the propagation to finish
+	// on all the nodes. Otherwise the simulation manager
+	// (runsimul.go in onet) might close some nodes and cause
+	// skipblock propagation to fail.
+	time.Sleep(blockInterval)
+
+
 	// We wait a bit before closing because c.GetProof is sent to the
 	// leader, but at this point some of the children might still be doing
 	// updateCollection. If we stop the simulation immediately, then the
@@ -222,80 +332,6 @@ func (s *SimulationService) Run(config *onet.SimulationConfig) error {
 
 
 
-func spawnDarcTxn(controlDarc darc.Darc, newDracSigner darc.Signer)  (byzcoin.ClientTransaction, darc.Darc, error){
-	var err error
-	idAdmin := []darc.Identity{newDracSigner.Identity()}
-	darcAdmin := darc.NewDarc(darc.InitRules(idAdmin, idAdmin),
-		[]byte("Admin darc"))
-	darcAdmin.Rules.AddRule("spawn:darc",
-		expression.InitOrExpr(controlDarc.GetIdentityString(), newDracSigner.Identity().String()))
-	darcAdmin.Rules.AddRule("invoke:evolve",
-		expression.InitOrExpr(controlDarc.GetIdentityString(), newDracSigner.Identity().String()))
-	darcAdminBuf, err := darcAdmin.ToProto()
-
-	//creating a transaction with spawn:darc instruction
-	ctx := newSpawnDarcTransaction(&controlDarc, darcAdminBuf)
-
-	return ctx, *darcAdmin, err
-}
-
-func newSpawnDarcTransaction(controlDarc *darc.Darc, newDarcBuf []byte) byzcoin.ClientTransaction{
-
-	ctx := byzcoin.ClientTransaction{
-		Instructions: []byzcoin.Instruction{{
-			InstanceID: byzcoin.NewInstanceID(controlDarc.GetBaseID()),
-			Nonce:      byzcoin.GenNonce(),
-			Index:      0,
-			Length:     1,
-			Spawn: &byzcoin.Spawn{
-				ContractID: byzcoin.ContractDarcID,
-				Args: []byzcoin.Argument{{
-					Name:  "darc",
-					Value: newDarcBuf,
-				}},
-			},
-		}},
-	}
-	return ctx
-}
 
 
-func spawnCarDarc( controlDarc *darc.Darc,
-	darcOwner *darc.Darc, id int) (byzcoin.Instruction, *darc.Darc, error) {
-
-	//rules for the new Car Darc
-	rs := darc.NewRules()
-	if err := rs.AddRule("spawn:car", expression.InitAndExpr(controlDarc.GetIdentityString())); err != nil {
-		panic("add rule should never fail on an empty rule list: " + err.Error())
-	}
-	if err := rs.AddRule("spawn:calypsoRead", expression.InitAndExpr(darcOwner.GetIdentityString())); err != nil {
-		panic("add rule should never fail on an empty rule list: " + err.Error())
-	}
-	if err := rs.AddRule("invoke:addReport", expression.InitAndExpr(darcOwner.GetIdentityString())); err != nil {
-		panic("add rule should never fail on an empty rule list: " + err.Error())
-	}
-	if err := rs.AddRule("spawn:calypsoWrite", expression.InitAndExpr(darcOwner.GetIdentityString())); err != nil {
-		panic("add rule should never fail on an empty rule list: " + err.Error())
-	}
-
-	//todo will it cause problems to create many car darcs with same rules and description? this is why i added ID
-	darcCar := darc.NewDarc(rs,
-		[]byte("Car darc" + string(id)))
-	darcCarBuf, err := darcCar.ToProto()
-	//ctx := newSpawnDarcTransaction(controlDarc, darcCarBuf)
-	inst := byzcoin.Instruction{
-		InstanceID: byzcoin.NewInstanceID(controlDarc.GetBaseID()),
-		Nonce:      byzcoin.GenNonce(),
-		Index:      0,
-		Length:     1,
-		Spawn: &byzcoin.Spawn{
-			ContractID: byzcoin.ContractDarcID,
-			Args: []byzcoin.Argument{{
-				Name:  "darc",
-				Value: darcCarBuf,
-			}},
-		},
-	}
-	return inst, darcCar, err
-}
 

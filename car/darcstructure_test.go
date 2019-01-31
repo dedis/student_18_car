@@ -122,10 +122,9 @@ func TestService_DarcStructure(t *testing.T) {
 	t.Log(carData2.Reports)
 
 
-	/*secrets, err := s.readReports(cInstance, darcCar, newReader, user)
+	secrets, err := s.readReports(cInstance, darcCar, newReader, user)
 	require.Nil(t, err)
 
 	t.Log("Mileage")
-	t.Log(secrets[0].Mileage)*/
-
+	t.Log(secrets)
 }

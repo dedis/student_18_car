@@ -15,7 +15,6 @@ import (
 	"time"
 )
 
-
 func NewCar(VIN string) (Car) {
 	var c Car
 	c.Vin = VIN
@@ -133,9 +132,8 @@ func (s *ser) readReports(instID byzcoin.InstanceID,
 	if len(carData.Reports)>0 {
 
 		for i := 0; i < len(carData.Reports); i++ {
-
 			//get the proof for the write instance
-			resp, err = s.cl.GetProof(carData.Reports[0].WriteInstanceID)
+			resp, err = s.cl.GetProof(carData.Reports[i].WriteInstanceID)
 			if err != nil {
 				return secretsList, err
 			}
@@ -148,22 +146,24 @@ func (s *ser) readReports(instID byzcoin.InstanceID,
 			if err != nil {
 				return secretsList, err
 			}
+
 			if dk.X.Equal(s.ltsReply.X) != true {
 				return secretsList, errors.New("the points are not derived from the same group")
 			}
-			_, err = calypso.DecodeKey(cothority.Suite, s.ltsReply.X, dk.Cs, dk.XhatEnc, s.signer.Ed25519.Secret)
+			key, err := calypso.DecodeKey(cothority.Suite, s.ltsReply.X, dk.Cs, dk.XhatEnc, s.signer.Ed25519.Secret)
 			if err != nil {
 				return secretsList, err
 			}
+
 			//now that we have the symetric key, we can decrypt the secret
-
 			//getting the write structure from the proof
-			/*var write calypso.Write
-			err = prWr.ContractValue(cothority.Suite, calypso.ContractWriteID, &write)
+			_, value, _ , _, err := prWr.KeyValue()
+			var write calypso.Write
+			//todo it throws error no constructor for interface kyber.Point
+			err = protobuf.Decode(value, &write)
 			if err != nil {
 				return secretsList, err
 			}
-
 
 			//decrypting the secret and placing it in a SecretData structure
 			plainText, err := decrypt(write.Data, key)
@@ -175,7 +175,7 @@ func (s *ser) readReports(instID byzcoin.InstanceID,
 			if err != nil {
 				return secretsList, err
 			}
-			secretsList = append(secretsList, secret)*/
+			secretsList = append(secretsList, secret)
 		}
 
 		return secretsList, err
@@ -221,7 +221,6 @@ func (s *ser) addRead( write *byzcoin.Proof,
 	if err != nil {
 		return nil, err
 	}
-
 	return &resp.Proof, err
 }
 

@@ -97,7 +97,6 @@ public class Report {
     /**
      * @return an argument representing the key/value pair.
      */
-    //TODO how to encode the report into []byte
     public Argument toArgument() {
         return new Argument("report", this.toProto().toByteArray());
     }

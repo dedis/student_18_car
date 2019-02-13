@@ -1,8 +1,6 @@
 package ch.epfl.dedis.template.gui.index;
 
-import ch.epfl.dedis.byzcoin.contracts.DarcInstance;
 import ch.epfl.dedis.calypso.CalypsoRPC;
-import ch.epfl.dedis.lib.darc.Darc;
 import ch.epfl.dedis.template.gui.json.ByzC;
 import javafx.application.Application;
 import javafx.scene.Scene;
@@ -13,7 +11,6 @@ import javafx.scene.Parent;
 import java.io.*;
 import java.net.URL;
 
-import static ch.epfl.dedis.byzcoin.contracts.DarcInstance.fromByzCoin;
 import static ch.epfl.dedis.template.gui.ByzSetup.*;
 
 public class Main extends Application {
@@ -27,10 +24,6 @@ public class Main extends Application {
     public static String homePath = System.getProperty("user.home");
 
     public static String errorMsg = "";
-
-    public static void main() {
-
-    }
 
     /**
      * Starts the ByzCoin Blockchain when it's running for the first time,

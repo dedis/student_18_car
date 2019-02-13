@@ -13,9 +13,11 @@ import (
 	"github.com/dedis/protobuf"
 	"github.com/dedis/student_18_car/car"
 	"io"
+	"strconv"
 	"time"
 )
 
+//create the new darc and
 func spawnDarcTxn(controlDarc darc.Darc, newDracSigner darc.Signer) (byzcoin.ClientTransaction, darc.Darc, error) {
 	var err error
 	idAdmin := []darc.Identity{newDracSigner.Identity()}
@@ -33,6 +35,7 @@ func spawnDarcTxn(controlDarc darc.Darc, newDracSigner darc.Signer) (byzcoin.Cli
 	return ctx, *darcAdmin, err
 }
 
+//create new client transaction with instruction to spawn a darc
 func newSpawnDarcTransaction(controlDarc *darc.Darc, newDarcBuf []byte) byzcoin.ClientTransaction {
 
 	ctx := byzcoin.ClientTransaction{
@@ -73,7 +76,7 @@ func spawnCarDarc(controlDarc *darc.Darc,
 
 	//todo will it cause problems to create many car darcs with same rules and description? this is why i added ID
 	darcCar := darc.NewDarc(rs,
-		[]byte("Car darc"+string(id)))
+		[]byte("Car darc"+strconv.Itoa(id)))
 	darcCarBuf, err := darcCar.ToProto()
 	inst := byzcoin.Instruction{
 		InstanceID: byzcoin.NewInstanceID(controlDarc.GetBaseID()),
@@ -174,6 +177,34 @@ func addReport(carInstID byzcoin.InstanceID, writeInstanceID byzcoin.InstanceID,
 	}
 	return instr, err
 }
+
+func addRead( write *byzcoin.Proof,
+	signer darc.Signer) (byzcoin.Instruction, error) {
+	var readBuf []byte
+	var instr byzcoin.Instruction
+	read := &calypso.Read{
+		Write: byzcoin.NewInstanceID(write.InclusionProof.Key()),
+		Xc:    signer.Ed25519.Point,
+	}
+	var err error
+	readBuf, err = protobuf.Encode(read)
+	if err != nil {
+		return instr, err
+	}
+	instr = byzcoin.Instruction{
+			InstanceID: byzcoin.NewInstanceID(write.InclusionProof.Key()),
+			Nonce:      byzcoin.Nonce{},
+			Index:      0,
+			Length:     1,
+			Spawn: &byzcoin.Spawn{
+				ContractID: calypso.ContractReadID,
+				Args:       byzcoin.Arguments{{Name: "read", Value: readBuf}},
+			},
+		}
+
+	return instr, err
+}
+
 
 
 //Symmetric encryption AES

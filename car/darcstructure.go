@@ -15,127 +15,51 @@ import (
 var testInterval = 500 * time.Millisecond
 var tSuite = suites.MustFind("Ed25519")
 
-// Spawn an Admin Darc from the Genesis Darc, giving the admin signer as input
-//and returning the new darc as output
-func (s *ser) spawnAdminDarc(admin darc.Signer)  (*darc.Darc, error){
-	var err error
-	idAdmin := []darc.Identity{admin.Identity()}
-	darcAdmin := darc.NewDarc(darc.InitRules(idAdmin, idAdmin),
-		[]byte("Admin darc"))
-	darcAdmin.Rules.AddRule("spawn:darc", expression.InitOrExpr(s.gDarc.GetIdentityString(), admin.Identity().String()))
-	darcAdmin.Rules.AddRule("invoke:evolve", expression.InitOrExpr(s.gDarc.GetIdentityString(), admin.Identity().String()))
-	darcAdminBuf, err := darcAdmin.ToProto()
-	if err != nil {
-		return nil, err
-	}
+// Spawn a new Admin Darc with a rule to spawn other darcs
+func spawnAdminDarc(controlDarc *darc.Darc, user darc.Signer) (byzcoin.ClientTransaction, *darc.Darc, error){
 
-	//creating a transaction with spawn:darc instruction
-	ctx := newSpawnDarcTransaction(s.gDarc, darcAdminBuf)
-
-	//Signing and sending a transaction to ByzCoin and waiting for it to be included in the ledger
-	_, err = s.signAndSendTransaction(ctx, s.signer, s.gDarc, byzcoin.NewInstanceID(darcAdmin.GetBaseID()).Slice())
-	if err != nil {
-		return nil, err
-	}
-	return darcAdmin, err
-}
-
-// Spawn an User(owner) Darc from the Admin Darc(input), giving the Admin Signer and User(owner) Signer as input as well
-//and returning the new darc
-func (s *ser) spawnUserDarc(darcAdmin *darc.Darc, admin darc.Signer, user darc.Signer) (*darc.Darc, error){
-
-	// Spawn User darc from the Admin one, but sign the request with
-	// the signer of the first darc to test delegation
+	var ctx byzcoin.ClientTransaction
 	idUser := []darc.Identity{user.Identity()}
-	darcUser := darc.NewDarc(darc.InitRules(idUser, idUser),
-		[]byte("User darc"))
-	darcUser.Rules.AddRule("invoke:evolve", expression.InitOrExpr(user.Identity().String()))
-	darcUserBuf, err := darcUser.ToProto()
+	newDarc := darc.NewDarc(darc.InitRules(idUser, idUser),
+		[]byte("Admin darc"))
+	newDarc.Rules.AddRule("spawn:darc", expression.InitOrExpr(controlDarc.GetIdentityString(), user.Identity().String()))
+	darcUserBuf, err := newDarc.ToProto()
 	if err != nil {
-		return nil, err
+		return ctx, nil, err
 	}
+	ctx = newSpawnDarcTransaction(controlDarc, darcUserBuf)
 
-	ctx := newSpawnDarcTransaction(darcAdmin, darcUserBuf)
-
-	//Signing and sending a transaction to ByzCoin and waiting for it to be included in the ledger
-	_, err = s.signAndSendTransaction(ctx, admin, darcAdmin, byzcoin.NewInstanceID(darcUser.GetBaseID()).Slice())
-	if err != nil {
-		return nil, err
-	}
-
-	return darcUser, err
+	return ctx, newDarc, err
 }
 
-// Spawn a Reader Darc from the Admin Darc(input), giving the service and Admin Signer as input as well
-//and returning the new darc together with the user signer
-func (s *ser) spawnReaderDarc( darcAdmin *darc.Darc,
-	admin darc.Signer, userDarc *darc.Darc) (*darc.Darc, error){
+// Spawn a new Darc from an existing control Darc(input)
+func spawnDarc(controlDarc *darc.Darc, idString string, role string) (byzcoin.ClientTransaction, *darc.Darc, error){
 
+	var ctx byzcoin.ClientTransaction
 	//rules for the new Reader Darc
 	rs := darc.NewRules()
-	if err := rs.AddRule("invoke:evolve", expression.InitAndExpr(userDarc.GetIdentityString())); err != nil {
+	if err := rs.AddRule("invoke:evolve", expression.InitAndExpr(idString)); err != nil {
 		panic("add rule should never fail on an empty rule list: " + err.Error())
 	}
-	if err := rs.AddRule("_sign", expression.InitAndExpr(userDarc.GetIdentityString())); err != nil {
+	if err := rs.AddRule("_sign", expression.InitAndExpr(idString)); err != nil {
 		panic("add rule should never fail on an empty rule list: " + err.Error())
 	}
-
-	darcReader := darc.NewDarc(rs,
-		[]byte("Reader darc"))
-	darcReaderBuf, err := darcReader.ToProto()
+	newDarc := darc.NewDarc(rs,
+		[]byte(role + " darc"))
+	newDarcBuf, err := newDarc.ToProto()
 	if err != nil {
-		return nil, err
+		return ctx, nil, err
 	}
+	ctx = newSpawnDarcTransaction(controlDarc, newDarcBuf)
 
-	ctx := newSpawnDarcTransaction(darcAdmin, darcReaderBuf)
-
-	_, err = s.signAndSendTransaction(ctx, admin, darcAdmin, byzcoin.NewInstanceID(darcReader.GetBaseID()).Slice())
-	if err != nil {
-		return nil, err
-	}
-
-	return darcReader, err
+	return ctx, newDarc, err
 }
 
-// Spawn a Reader Darc from the Admin Darc(input), giving the service and Admin Signer as input as well
-//and returning the new darc together with the user signer
-func (s *ser) spawnGarageDarc( darcAdmin *darc.Darc,
-	admin darc.Signer, userDarc *darc.Darc) (*darc.Darc, error) {
 
-	// Spawn Reader darc from the Admin one, but sign the request with
-	// the signer of the first darc to test delegation
+func spawnCarDarc( darcAdmin *darc.Darc, darcReader *darc.Darc,
+	darcGarage *darc.Darc) (byzcoin.ClientTransaction, *darc.Darc, error) {
 
-	//rules for the new Garage Darc
-	rs := darc.NewRules()
-	if err := rs.AddRule("invoke:evolve", expression.InitAndExpr(userDarc.GetIdentityString())); err != nil {
-		panic("add rule should never fail on an empty rule list: " + err.Error())
-	}
-	if err := rs.AddRule("_sign", expression.InitAndExpr(userDarc.GetIdentityString())); err != nil {
-		panic("add rule should never fail on an empty rule list: " + err.Error())
-	}
-
-	darcGarage := darc.NewDarc(rs,
-		[]byte("Garage darc"))
-	darcGarageBuf, err := darcGarage.ToProto()
-	if err != nil {
-		return nil, err
-	}
-
-	ctx := newSpawnDarcTransaction(darcAdmin, darcGarageBuf)
-
-	_, err = s.signAndSendTransaction(ctx, admin, darcAdmin, byzcoin.NewInstanceID(darcGarage.GetBaseID()).Slice())
-	if err != nil {
-		return nil, err
-	}
-
-	return darcGarage, err
-}
-
-func (s *ser) spawnCarDarc( darcAdmin *darc.Darc, admin darc.Signer,
-	darcReader *darc.Darc, darcGarage *darc.Darc) (*darc.Darc, error) {
-
-	// Spawn Car darc from the Admin one
-
+	var ctx byzcoin.ClientTransaction
 	//rules for the new Car Darc
 	rs := darc.NewRules()
 	if err := rs.AddRule("spawn:car", expression.InitAndExpr(darcAdmin.GetIdentityString())); err != nil {
@@ -150,24 +74,25 @@ func (s *ser) spawnCarDarc( darcAdmin *darc.Darc, admin darc.Signer,
 	if err := rs.AddRule("spawn:calypsoWrite", expression.InitAndExpr(darcGarage.GetIdentityString())); err != nil {
 		panic("add rule should never fail on an empty rule list: " + err.Error())
 	}
-
 	darcCar := darc.NewDarc(rs,
 		[]byte("Car darc"))
 	darcCarBuf, err := darcCar.ToProto()
 	if err != nil {
-		return nil, err
+		return ctx, nil, err
 	}
+	ctx = newSpawnDarcTransaction(darcAdmin, darcCarBuf)
 
-	ctx := newSpawnDarcTransaction(darcAdmin, darcCarBuf)
-
-	_, err = s.signAndSendTransaction(ctx, admin, darcAdmin, byzcoin.NewInstanceID(darcCar.GetBaseID()).Slice())
-
-	if err != nil {
-		return nil, err
-	}
-
-	return darcCar, err
+	return ctx, darcCar, err
 }
+
+/*
+Adding and removing Members for garage and reader darcs
+assume the following rule:
+
+(Pub_m1 | Pub_m2 | ...) & DarcUser
+
+where m1 is member1, ...
+ */
 
 func (s *ser) removeSigner(d *darc.Darc,
 	signerToBeRemoved darc.Signer, signer darc.Signer) (*darc.Darc, error){
@@ -440,14 +365,12 @@ func (s *ser)signAndSendTransaction(ctx byzcoin.ClientTransaction, txnSigner dar
 	if err != nil {
 		return nil, err
 	}
-
 	// Sending this transaction to ByzCoin and waiting for it to be included
 	// in the ledger, up to a maximum of 5 block intervals
 	_, err = s.cl.AddTransactionAndWait(ctx, 5)
 	if err != nil {
 		return nil, err
 	}
-
 	//GetProof returns a proof for the key stored in the skipchain
 	resp, err := s.cl.GetProof(instanceKey)
 	if err != nil {

@@ -10,6 +10,7 @@ import (
 	"github.com/dedis/cothority/calypso"
 	"github.com/dedis/cothority/darc"
 	"github.com/dedis/kyber/util/random"
+	"github.com/dedis/onet/network"
 	"github.com/dedis/protobuf"
 	"io"
 	"time"
@@ -159,8 +160,7 @@ func (s *ser) readReports(instID byzcoin.InstanceID,
 			//getting the write structure from the proof
 			_, value, _ , _, err := prWr.KeyValue()
 			var write calypso.Write
-			//todo it throws error no constructor for interface kyber.Point
-			err = protobuf.Decode(value, &write)
+			err = protobuf.DecodeWithConstructors(value, &write, network.DefaultConstructors(cothority.Suite))
 			if err != nil {
 				return secretsList, err
 			}

@@ -4,9 +4,6 @@ import ch.epfl.dedis.byzcoin.Instance;
 import ch.epfl.dedis.template.proto.CarProto;
 import com.google.protobuf.InvalidProtocolBufferException;
 import ch.epfl.dedis.byzcoin.transaction.Argument;
-import com.google.protobuf.ByteString;
-
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -104,7 +101,6 @@ public class Car {
     /**
      * @return an argument representing the car.
      */
-    //TODO encode the car into []byte
     public Argument toArgument() {
       return new Argument("car", this.toProto().toByteArray());
     }

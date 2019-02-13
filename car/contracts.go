@@ -16,7 +16,6 @@ func ContractCar(cdb byzcoin.ReadOnlyStateTrie, inst byzcoin.Instruction,
 	cIn []byzcoin.Coin) (scs []byzcoin.StateChange, cOut []byzcoin.Coin, err error) {
 
 	cOut = cIn
-
 	err = inst.VerifyDarcSignature(cdb)
 	if err != nil {
 		return
@@ -29,6 +28,7 @@ func ContractCar(cdb byzcoin.ReadOnlyStateTrie, inst byzcoin.Instruction,
 	}
 
 	switch inst.GetType() {
+	//spawns new car instance
 	case byzcoin.SpawnType:
 		if inst.Spawn.ContractID != ContractCarID {
 			return nil, nil, errors.New("can only spawn car instances")
@@ -38,11 +38,11 @@ func ContractCar(cdb byzcoin.ReadOnlyStateTrie, inst byzcoin.Instruction,
 		if cBuf == nil || len(cBuf) == 0 {
 			return nil, nil, errors.New("need a car argument")
 		}
-		//TODO: verify that is car
+		//verify that is car
 		car := Car{}
 		err = protobuf.Decode(cBuf, &car)
 		if err != nil {
-			return
+			return nil, nil, errors.New("not a car")
 		}
 
 		instID := inst.DeriveID("")
@@ -52,7 +52,7 @@ func ContractCar(cdb byzcoin.ReadOnlyStateTrie, inst byzcoin.Instruction,
 				inst.Spawn.ContractID, cBuf, darcID),
 		}
 		return
-
+	//updates the car instance by adding a new report
 	case byzcoin.InvokeType:
 		if inst.Invoke.Command != "addReport" {
 			return nil, nil, errors.New("Value contract can only add Reports")

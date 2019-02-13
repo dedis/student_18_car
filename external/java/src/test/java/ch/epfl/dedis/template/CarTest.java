@@ -8,7 +8,6 @@ import ch.epfl.dedis.byzcoin.Proof;
 import ch.epfl.dedis.lib.darc.*;
 import ch.epfl.dedis.lib.exception.CothorityCommunicationException;
 import ch.epfl.dedis.byzcoin.contracts.DarcInstance;
-import ch.epfl.dedis.template.gui.index.IndexController;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -19,15 +18,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static ch.epfl.dedis.byzcoin.contracts.DarcInstance.fromByzCoin;
-import static ch.epfl.dedis.template.gui.ByzSetup.*;
-import static ch.epfl.dedis.template.gui.index.Main.calypsoRPC;
 import static java.time.temporal.ChronoUnit.MILLIS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class CarTest {
-    //static ByzCoinRPC bc;
     static CalypsoRPC calypso;
 
     static Signer genAdmin;
@@ -112,8 +107,6 @@ public class CarTest {
         //Spawning garage darc with invoke:evolve and _sign rules
         carGarageDarc = new Darc(Arrays.asList(carOwnerDarc.getIdentity()),
                 Arrays.asList(carOwnerDarc.getIdentity()), " Car Garage darc".getBytes());
-//        carGarageDarc.addIdentity("_sign", garageDarc.getIdentity(), Rules.OR);
-
         carGarageDarcInstance = adminDarcInstance.spawnDarcAndWait(carGarageDarc, admin, 10);
 
 
@@ -126,7 +119,6 @@ public class CarTest {
         carDarc = new Darc(rs, "Car darc".getBytes());
         carDarcInstance = adminDarcInstance.spawnDarcAndWait(carDarc, admin, 10);
 
-        System.out.println(carDarcInstance.getDarc().toString());
     }
 
     /**
@@ -139,53 +131,37 @@ public class CarTest {
         assertTrue(calypso.checkLiveness());
     }
 
-    /**
-     * Evolves the darc to give spawn-rights to create a keyValue contract, as well as the right to invoke the
-     * update command from the contract.
-     * Then it will store a first key/value pair and verify it's correctly stored.
-     * Finally it updates the key/value pair to a new value.
-     *
-     * @throws Exception
-    //     */
-//    @Test
-//    void addReader() throws Exception {
-//
-//        Signer reader = new SignerEd25519();
-//        readerDarc.addIdentity("_sign", reader.getIdentity(), Rules.AND);
-//        calypso.getGenesisDarcInstance().evolveDarcAndWait(readerDarc, admin, 10);
-//        System.out.println(readerDarc.toString());
-//
-//    }
-
 
     /**
-     * Evolves the darc to give spawn-rights to create a keyValue contract, as well as the right to invoke the
-     * update command from the contract.
-     * Then it will store a first key/value pair and verify it's correctly stored.
-     * Finally it updates the key/value pair to a new value.
+     * Spawns a new car Instance
      *
      * @throws Exception
      */
     @Test
     void spawnCar() throws Exception {
 
-        //spawn
         Car c = new Car("123A456");
         CarInstance ci = new CarInstance(calypso, carDarcInstance, admin, c);
-        System.out.println("Car Instance:");
-        System.out.println(ci.getInstance().getId().toString());
+
         Car c2 = new Car(ci.getInstance().getData());
         assertEquals(c, c2);
     }
 
+
+    /**
+     * Spawns a new car Instance
+     * Evolves the car garage Darc by adding a new Garage
+     * Evolves the car instance by adding a report
+     * Reads the report
+     *
+     * @throws Exception
+     */
     @Test
     void spawnCarAddAndReadReport() throws Exception {
 
         //spawn car
         Car c = new Car("123A46");
         CarInstance ci = new CarInstance(calypso, carDarcInstance, admin, c);
-        System.out.println("Car Instance:");
-        System.out.println(ci.getInstance().getId().toString());
         Car c2 = new Car(ci.getInstance().getData());
         assertEquals(c, c2);
 
@@ -199,11 +175,9 @@ public class CarTest {
         carGarageDarc.addIdentity(Darc.RuleSignature, garageDarc.getIdentity(), Rules.OR);
         carGarageDarcInstance.evolveDarcAndWait(carGarageDarc, user, 10);
 
-        //update car
+        //update car instance by adding a report
         SecretData secret = new SecretData("1090", "100 000", true, "tires changed");
         Document doc = new Document(secret.toProto().toByteArray(), 16, "sdf".getBytes(), carDarc.getBaseId());
-        //WriteData wd = new WriteData(calypso.getLTS(), secret.getBytes(),
-        //      new Encryption.keyIv(16).getKeyMaterial() , null,carDarc.getBaseId());
         WriteInstance wi = new WriteInstance(calypso,
                 carDarc.getBaseId(), Arrays.asList(user), doc.getWriteData(calypso.getLTS()));
 
@@ -217,6 +191,7 @@ public class CarTest {
         ci.addReportAndWait(reports, user, 10);
         assertEquals(report, ci.getReports().get(0));
 
+        //read the report
         ReadInstance ri = new ReadInstance(calypso, wi, Arrays.asList(user));
 
         DecryptKeyReply dkr = calypso.tryDecrypt(calypso.getProof(wi.getInstance().getId()), calypso.getProof(ri.getInstance().getId()));
@@ -234,21 +209,19 @@ public class CarTest {
 
     }
 
+    /**
+     * Evolves the car owner darc
+     *
+     * @throws Exception
+     */
     @Test
     void changeOwner() throws Exception {
 
-        //spawn car
+        //spawn car instance
         Car c = new Car("123A46");
         CarInstance ci = new CarInstance(calypso, carDarcInstance, admin, c);
-        System.out.println("Car Instance:");
-        System.out.println(ci.getInstance().getId().toString());
         Car c2 = new Car(ci.getInstance().getData());
         assertEquals(c, c2);
-
-        System.out.println("User Darc");
-        System.out.println(userDarc.toString());
-        System.out.println("Car Owner Darc");
-        System.out.println(carOwnerDarc.toString());
 
         Signer newOwner = new SignerEd25519();
         Darc newOwnerDarc = new Darc(Arrays.asList(newOwner.getIdentity()),
@@ -257,59 +230,6 @@ public class CarTest {
         carOwnerDarc.setRule("invoke:evolve", newOwnerDarc.getIdentity().toString().getBytes());
         carOwnerDarcInstance.evolveDarcAndWait(carOwnerDarc, user, 10);
 
-        System.out.println();
-        System.out.println("New User Darc");
-        System.out.println(newOwnerDarc.toString());
-        System.out.println("Car Owner Darc");
-        System.out.println(carOwnerDarc.toString());
-
     }
 
-    @Test
-    void changeDarcRule() throws Exception {
-
-    }
-
-
-
-
-//    Darc carOwnerDarc = getCarOwnerDarc(chooseVinButton.getText());
-//    DarcInstance carOwnerDarcInstance = fromByzCoin(calypsoRPC, carOwnerDarc.getId());
-//    Darc newOwnerDarc = getPersonDarc(changeOwnerButton.getText(), "user");
-//                    carOwnerDarc.setRule("_sign", newOwnerDarc.getIdentity().toProto().toByteArray());
-//                    carOwnerDarc.setRule("invoke:evolve", newOwnerDarc.getIdentity().toProto().toByteArray());
-//                    carOwnerDarcInstance.evolveDarcAndWait(carOwnerDarc,
-//    getPersonSigner(IndexController.role, "user"), 10);
-//                    System.out.println(carOwnerDarc.toString());
-
-
-    /**
-     * We only give the client the roster and the genesis ID. It should be able to find the configuration, latest block
-     * and the genesis darc.
-     */
-/*    @Test
-    void reconnect() throws Exception {
-        KeyValue mKV = new KeyValue("value", "314159".getBytes());
-        KeyValueInstance vi = new KeyValueInstance(bc, genesisDarcInstance, admin, Arrays.asList(mKV));
-        assertEquals(mKV, vi.getKeyValues().get(0));
-
-        reconnect_client(bc.getRoster(), bc.getGenesis().getSkipchainId(), vi.getId());
-    }*/
-
-    /**
-     * Re-connects to a ByzCoin ledger and verifies the value stored in the keyValue instance. This shows
-     * how to use the minimal information necessary to get the data from an instance.
-     *
-     * @param ro   the roster of ByzCoin
-     * @param scId the Id of ByzCoin
-     * @param kvId the Id of the instance to retrieve
-     */
-   /* void reconnect_client(Roster ro, SkipblockId scId, InstanceId kvId) throws CothorityException, InvalidProtocolBufferException {
-        ByzCoinRPC bc = new ByzCoinRPC(ro, scId);
-        assertTrue(bc.checkLiveness());
-
-        KeyValueInstance localKvi = new KeyValueInstance(bc, kvId);
-        KeyValue testKv = new KeyValue("value", "314159".getBytes());
-        assertEquals(testKv, localKvi.getKeyValues().get(0));
-    }*/
 }

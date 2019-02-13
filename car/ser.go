@@ -68,10 +68,6 @@ func newSerN(t *testing.T, interval time.Duration, nodes int, viewchange bool) *
 	registerCarContract(s.servers)
 	s.createGenesis(t, interval)
 
-	//resp, err := s.services[0].CreateGenesisBlock(s.genesisMsg)
-	//require.Nil(t, err)
-	//s.sb = resp.Skipblock
-
 	var err error
 	// Start DKG
 	s.ltsReply, err = s.servicesCal[0].CreateLTS(&calypso.CreateLTS{Roster: *s.roster, BCID: s.gbReply.Skipblock.Hash})

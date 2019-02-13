@@ -3,14 +3,18 @@ package main
 import (
 	"errors"
 	"github.com/BurntSushi/toml"
+	"github.com/dedis/cothority"
 	"github.com/dedis/cothority/byzcoin"
 	"github.com/dedis/cothority/calypso"
 	"github.com/dedis/cothority/darc"
 	"github.com/dedis/kyber/util/random"
 	"github.com/dedis/onet"
 	"github.com/dedis/onet/log"
+	"github.com/dedis/onet/network"
 	"github.com/dedis/onet/simul/monitor"
+	"github.com/dedis/protobuf"
 	"github.com/dedis/student_18_car/car"
+	"strconv"
 	"time"
 )
 
@@ -67,6 +71,8 @@ func (s *SimulationService) Node(config *onet.SimulationConfig) error {
 	return s.SimulationBFTree.Node(config)
 }
 
+
+
 // Run is used on the destination machines and runs a number of
 // rounds
 func (s *SimulationService) Run(config *onet.SimulationConfig) error {
@@ -74,6 +80,8 @@ func (s *SimulationService) Run(config *onet.SimulationConfig) error {
 	var carDarcs []darc.Darc
 	var carInstances []byzcoin.InstanceID
 	var writeInstances []byzcoin.InstanceID
+	var readInstances []byzcoin.InstanceID
+	//we'll use the following secret data for every report, for simplicity
 	var wData car.SecretData
 	wData.ECOScore = "2310"
 	wData.Mileage = "100 000"
@@ -103,7 +111,7 @@ func (s *SimulationService) Run(config *onet.SimulationConfig) error {
 	if err != nil {
 		return errors.New("couldn't create genesis block: " + err.Error())
 	}
-	//todo is this the way i should use calypso???
+	//include Calypso and create long term secrets
 	calypsoClient := calypso.NewClient(c)
 	lts, err := calypsoClient.CreateLTS()
 	if err != nil {
@@ -111,8 +119,6 @@ func (s *SimulationService) Run(config *onet.SimulationConfig) error {
 	}
 	bChainSetup.Record()
 
-	// Measuring the time it takes to prepare the system
-	prepare := monitor.NewTimeMeasure("prepare")
 	// Spawn an Admin Darc from the genesis darc
 	admin := darc.NewSignerEd25519(nil, nil)
 	ctx, adminDarc, err := spawnDarcTxn(gm.GenesisDarc, admin)
@@ -131,6 +137,13 @@ func (s *SimulationService) Run(config *onet.SimulationConfig) error {
 		return errors.New("couldn't create admin darc: " + err.Error())
 	}
 
+
+
+
+
+
+	// Measuring the time it takes to prepare the system
+	prepare := monitor.NewTimeMeasure("prepare")
 	// Create user darc, which will be used as reader, owner and garage for simplicity
 	user := darc.NewSignerEd25519(nil, nil)
 	ctx, userDarc, err := spawnDarcTxn(adminDarc, user)
@@ -149,12 +162,12 @@ func (s *SimulationService) Run(config *onet.SimulationConfig) error {
 		return errors.New("couldn't create user darc: " + err.Error())
 	}
 
-	//create #(s.Transactions) car darcs and store them in []carDarcs
-	if s.Transactions < 3 {
-		log.Warn("The 'send_sum' measurement will be very skewed, as the last transaction")
-		log.Warn("is not measured.")
-	}
 
+
+
+
+
+	//create #(s.Transactions) car darcs and store them in []carDarcs
 	txs := s.Transactions / s.BatchSize
 	insts := s.BatchSize
 	log.Lvlf1("Sending %d transactions with %d instructions each", txs, insts)
@@ -162,8 +175,8 @@ func (s *SimulationService) Run(config *onet.SimulationConfig) error {
 	// Inverse the prepare/send loop, so that the last transaction is not sent,
 	// but can be sent in the 'confirm' phase using 'AddTransactionAndWait'.
 	counterID := 0
-	for t := 0; t < txs; t++ {
 
+	for t := 0; t < txs; t++ {
 		if len(tx.Instructions) > 0 {
 			log.Lvlf1("Sending transaction %d", t)
 			_, err = c.AddTransaction(tx)
@@ -179,12 +192,13 @@ func (s *SimulationService) Run(config *onet.SimulationConfig) error {
 			if err != nil {
 				return errors.New("instruction error: " + err.Error())
 			}
-			carDarcs = append(carDarcs, *carDarc)
+
 			tx.Instructions = append(tx.Instructions, inst)
 			err = byzcoin.SignInstruction(&tx.Instructions[i], adminDarc.GetBaseID(), admin)
 			if err != nil {
 				return errors.New("signature error: " + err.Error())
 			}
+			carDarcs = append(carDarcs, *carDarc)
 		}
 	}
 	log.Lvl1("Sending last transaction and waiting")
@@ -192,6 +206,11 @@ func (s *SimulationService) Run(config *onet.SimulationConfig) error {
 	if err != nil {
 		return errors.New("while adding transaction and waiting: " + err.Error())
 	}
+
+
+
+
+
 
 
 
@@ -209,33 +228,45 @@ func (s *SimulationService) Run(config *onet.SimulationConfig) error {
 		}
 		for i := 0; i < insts; i++ {
 			counterID++
-			c := car.NewCar(string(counterID))
+			c := car.NewCar(strconv.Itoa(counterID))
 			instr, err := createCarInstanceInstr(c, &carDarcs[t*insts+i])
 			if err != nil {
 				return errors.New("instruction error: " + err.Error())
 			}
-			carInstances = append(carInstances, instr.DeriveID(""))
+
 			tx.Instructions = append(tx.Instructions, instr)
 			err = byzcoin.SignInstruction(&tx.Instructions[i], carDarcs[t*insts+i].GetBaseID(), admin)
 			if err != nil {
 				return errors.New("signature error: " + err.Error())
 			}
+			carInstances = append(carInstances, tx.Instructions[i].DeriveID(""))
+
 		}
 	}
 	// Confirm the transaction by sending the last transaction using
 	// AddTransactionAndWait. There is a small error in measurement,
 	// as we're missing one of the AddTransaction call in the measurements.
 	log.Lvl1("Sending last transaction and waiting")
+	leaderCarSpawn := monitor.NewTimeMeasure("leaderCarSpawn")
 	_, err = c.AddTransactionAndWait(tx, 20)
 	if err != nil {
 		return errors.New("while adding transaction and waiting: " + err.Error())
 	}
+	leaderCarSpawn.Record()
 
 	prepare.Record()
 
 
+
+
+
+
+
+
+
+
 	addReports := monitor.NewTimeMeasure("addReports")
-	//create #(s.Transactions) car Instances and store them in []writeInstances
+	//create #(s.Transactions) write Instances and store them in []writeInstances
 	log.Lvlf1("Sending %d transactions with %d instructions each", txs, insts)
 	tx = byzcoin.ClientTransaction{}
 	for t := 0; t < txs; t++ {
@@ -248,19 +279,19 @@ func (s *SimulationService) Run(config *onet.SimulationConfig) error {
 			tx.Instructions = byzcoin.Instructions{}
 		}
 		for i := 0; i < insts; i++ {
-			counterID++
 			key := random.Bits(128, true, random.New())
 			instr, err := addWrite(key, wData,
 				&carDarcs[t*insts+i], *lts)
 			if err != nil {
 				return errors.New("instruction error: " + err.Error())
 			}
-			writeInstances = append(writeInstances, instr.DeriveID(""))
+
 			tx.Instructions = append(tx.Instructions, instr)
 			err = byzcoin.SignInstruction(&tx.Instructions[i], carDarcs[t*insts+i].GetBaseID(), user)
 			if err != nil {
 				return errors.New("signature error: " + err.Error())
 			}
+			writeInstances = append(writeInstances, tx.Instructions[i].DeriveID(""))
 		}
 	}
 	// Confirm the transaction by sending the last transaction using
@@ -271,6 +302,12 @@ func (s *SimulationService) Run(config *onet.SimulationConfig) error {
 	if err != nil {
 		return errors.New("while adding transaction and waiting: " + err.Error())
 	}
+
+
+
+
+
+
 
 
 	//add a report for each car instance
@@ -309,9 +346,121 @@ func (s *SimulationService) Run(config *onet.SimulationConfig) error {
 
 
 
-	readReports := monitor.NewTimeMeasure("readReports")
 
-	readReports.Record()
+
+
+
+
+	addReadInstance := monitor.NewTimeMeasure("addReadInstance")
+	//adding a calypso read instance for reading the report for each car instance
+	log.Lvlf1("Sending %d transactions with %d instructions each", txs, insts)
+	tx = byzcoin.ClientTransaction{}
+	for t := 0; t < txs; t++ {
+		if len(tx.Instructions) > 0 {
+			log.Lvlf1("Sending transaction %d", t)
+			_, err = c.AddTransaction(tx)
+			if err != nil {
+				return errors.New("couldn't add transaction: " + err.Error())
+			}
+			tx.Instructions = byzcoin.Instructions{}
+		}
+		for i := 0; i < insts; i++ {
+			//get the "car" from the car instance
+			resp, err := c.GetProof(carInstances[t*insts+i].Slice())
+			if err != nil {
+				return errors.New("couldn't get proof for the car instance: " + err.Error())
+			}
+			_,values, _, _, err := resp.Proof.KeyValue()
+			if err != nil {
+				return err
+			}
+			var carData car.Car
+			err = protobuf.Decode(values, &carData)
+			if err != nil {
+				return err
+			}
+			//get the proof for the write instance
+			if (len(carData.Reports)>0){
+				resp, err = c.GetProof(carData.Reports[0].WriteInstanceID)
+				if err != nil {
+					return err
+				}
+			}
+
+			prWr:= resp.Proof
+			//add read instance
+			instruction, err := addRead(&prWr, user)
+
+			if err != nil {
+				return errors.New("instruction error: " + err.Error())
+			}
+			tx.Instructions = append(tx.Instructions, instruction)
+			err = byzcoin.SignInstruction(&tx.Instructions[i], carDarcs[t*insts+i].GetBaseID(), user)
+			if err != nil {
+				return errors.New("signature error: " + err.Error())
+			}
+			readInstances = append(readInstances, tx.Instructions[i].DeriveID(""))
+		}
+	}
+	addReadInstance.Record()
+	// Confirm the transaction by sending the last transaction using
+	// AddTransactionAndWait. There is a small error in measurement,
+	// as we're missing one of the AddTransaction call in the measurements.
+	log.Lvl1("Sending last transaction and waiting")
+	_, err = c.AddTransactionAndWait(tx, 20)
+	if err != nil {
+		return errors.New("while adding transaction and waiting: " + err.Error())
+	}
+
+
+
+
+
+
+
+
+	//using the Read and Write instances to request re-encryption key and then read the secret
+	decryptKey := monitor.NewTimeMeasure("decryptKey")
+	for i:=0; i< len(readInstances); i++ {
+
+		respRead, err := c.GetProof(readInstances[i].Slice())
+		if err != nil {
+			return err
+		}
+
+		respWrite, err := c.GetProof(writeInstances[i].Slice())
+
+		dk, err := calypsoClient.DecryptKey(&calypso.DecryptKey{Read: respRead.Proof, Write: respWrite.Proof})
+		if err != nil {
+			return err
+		}
+
+		key, err := calypso.DecodeKey(cothority.Suite, lts.X, dk.Cs, dk.XhatEnc, user.Ed25519.Secret)
+		if err != nil {
+			return err
+		}
+
+		//now that we have the symetric key, we can decrypt the secret
+		//getting the write structure from the proof
+		_, value, _ , _, err := respWrite.Proof.KeyValue()
+		var write calypso.Write
+		err = protobuf.DecodeWithConstructors(value, &write, network.DefaultConstructors(cothority.Suite))
+		if err != nil {
+			return err
+		}
+
+		//decrypting the secret and placing it in a SecretData structure
+		plainText, err := decrypt(write.Data, key)
+		var secret car.SecretData
+		err = protobuf.Decode(plainText, &secret)
+		if err != nil {
+			return err
+		}
+	}
+	decryptKey.Record()
+
+
+
 
 
 	// This sleep is needed to wait for the propagation to finish
@@ -319,7 +468,6 @@ func (s *SimulationService) Run(config *onet.SimulationConfig) error {
 	// (runsimul.go in onet) might close some nodes and cause
 	// skipblock propagation to fail.
 	time.Sleep(blockInterval)
-
 
 	// We wait a bit before closing because c.GetProof is sent to the
 	// leader, but at this point some of the children might still be doing

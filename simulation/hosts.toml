@@ -9,12 +9,11 @@ Bandwith = 100
 # of tests
 
 Keep,   Transactions, BatchSize,  Hosts,  Delay, BlockInterval
-true,   100,          5,          5,      100,    "5s"
-true,   100,          5,          10,      100,    "5s"
-true,   100,          5,          15,      100,    "5s"
-true,   100,          5,          20,      100,    "5s"
-#true,   100,          5,          50,      100,    "5s"
-#true,   100,          5,          100,      100,    "5s"
-#true,   100,          5,          1000,      100,    "5s"
+true,   100,          5,          5,      30,    "5s"
+true,   100,          5,          10,     30,    "5s"
+true,   100,          5,          20,     30,    "5s"
+true,   100,          5,          40,     30,    "5s"
+#true,   100,          5,          100,      30,    "5s"
+#true,   100,          5,          1000,      10,    "5s"
 
 

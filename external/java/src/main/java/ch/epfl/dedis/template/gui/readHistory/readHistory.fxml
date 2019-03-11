@@ -18,5 +18,7 @@
       <TextArea fx:id="historyTextArea" layoutX="250.0" layoutY="97.0" prefHeight="269.0" prefWidth="290.0" promptText="History" />
       <Button fx:id="readHistoryButton" layoutX="61.0" layoutY="218.0" mnemonicParsing="false" prefHeight="27.0" prefWidth="139.0" text="Request History" />
       <Button fx:id="goBackButton" layoutX="60.0" layoutY="339.0" mnemonicParsing="false" prefHeight="27.0" prefWidth="139.0" text="Go Back" />
+      <TextField fx:id="roleID" layoutX="441.0" layoutY="25.0" prefHeight="27.0" prefWidth="145.0" promptText="ID" />
+      <Label layoutX="61.0" layoutY="73.0" prefHeight="17.0" prefWidth="105.0" text="Choose VIN:" />
    </children>
 </AnchorPane>

@@ -13,19 +13,15 @@ import ch.epfl.dedis.lib.darc.SignerEd25519;
 import ch.epfl.dedis.lib.darc.SignerFactory;
 import ch.epfl.dedis.lib.proto.DarcProto;
 import ch.epfl.dedis.lib.proto.OnetProto;
-import ch.epfl.dedis.lib.proto.SkipchainProto;
-import ch.epfl.dedis.template.gui.errorScene.ErrorSceneController;
 import ch.epfl.dedis.template.gui.index.Main;
 import ch.epfl.dedis.template.gui.json.ByzC;
 import ch.epfl.dedis.template.gui.json.CarJson;
 import ch.epfl.dedis.template.gui.json.Person;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.File;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 
@@ -50,6 +46,24 @@ public class ByzSetup {
             "  Address = \"tcp://127.0.0.1:7008\"\n" +
             "  Public = \"8b25f8ac70b85b2e9aa7faf65507d4f7555af1c872240305117b7659b1e58a1e\"\n" +
             "  Description = \"Conode_4\"";
+
+    public static String tomlStrEPFL = "[[servers]]\n" +
+            "  Address = \"tcp://dedis-ns2.epfl.ch:7002\"\n" +
+            "  Public = \"d829a0790ffa8799e4bbd1bee8da0507c9166b665660baba72dd8610fca27cc1\"\n" +
+            "  Description = \"Conode_1\"\n" +
+            "[[servers]]\n" +
+            "  Address = \"tcp://dedis-ns2.epfl.ch:7004\"\n" +
+            "  Public = \"d750a30daa44713d1a4b44ca4ef31142b3b53c0c36a558c0d610cc4108bb4ecb\"\n" +
+            "  Description = \"Conode_2\"\n" +
+            "[[servers]]\n" +
+            "  Address = \"tcp://dedis-ns2.epfl.ch:7006\"\n" +
+            "  Public = \"7f47f33084c3ecc233f8b05b8f408bbd1c2e4a129aae126f92becacc73576bc7\"\n" +
+            "  Description = \"Conode_3\"\n" +
+            "[[servers]]\n" +
+            "  Address = \"tcp://dedis-ns2.epfl.ch:7008\"\n" +
+            "  Public = \"8b25f8ac70b85b2e9aa7faf65507d4f7555af1c872240305117b7659b1e58a1e\"\n" +
+            "  Description = \"Conode_4\"";
+
 
     /**
      * Setting up the blockchain when the app for the demo is run.

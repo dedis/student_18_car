@@ -142,8 +142,7 @@ func (s *SimulationService) Run(config *onet.SimulationConfig) error {
 
 
 
-	// Measuring the time it takes to prepare the system
-	prepare := monitor.NewTimeMeasure("prepare")
+
 	// Create user darc, which will be used as reader, owner and garage for simplicity
 	user := darc.NewSignerEd25519(nil, nil)
 	ctx, userDarc, err := spawnDarcTxn(adminDarc, user)
@@ -166,7 +165,8 @@ func (s *SimulationService) Run(config *onet.SimulationConfig) error {
 
 
 
-
+	// Measuring the time it takes to prepare the system
+	enrollCars := monitor.NewTimeMeasure("enrollCars")
 	//create #(s.Transactions) car darcs and store them in []carDarcs
 	txs := s.Transactions / s.BatchSize
 	insts := s.BatchSize
@@ -254,7 +254,7 @@ func (s *SimulationService) Run(config *onet.SimulationConfig) error {
 	}
 	leaderCarSpawn.Record()
 
-	prepare.Record()
+	enrollCars.Record()
 
 
 
@@ -351,8 +351,8 @@ func (s *SimulationService) Run(config *onet.SimulationConfig) error {
 
 
 
-	addReadInstance := monitor.NewTimeMeasure("addReadInstance")
 	//adding a calypso read instance for reading the report for each car instance
+	addReadInstance := monitor.NewTimeMeasure("addReadInstance")
 	log.Lvlf1("Sending %d transactions with %d instructions each", txs, insts)
 	tx = byzcoin.ClientTransaction{}
 	for t := 0; t < txs; t++ {
@@ -402,7 +402,7 @@ func (s *SimulationService) Run(config *onet.SimulationConfig) error {
 			readInstances = append(readInstances, tx.Instructions[i].DeriveID(""))
 		}
 	}
-	addReadInstance.Record()
+
 	// Confirm the transaction by sending the last transaction using
 	// AddTransactionAndWait. There is a small error in measurement,
 	// as we're missing one of the AddTransaction call in the measurements.
@@ -411,6 +411,7 @@ func (s *SimulationService) Run(config *onet.SimulationConfig) error {
 	if err != nil {
 		return errors.New("while adding transaction and waiting: " + err.Error())
 	}
+	addReadInstance.Record()
 
 
 

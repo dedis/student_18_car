@@ -7,7 +7,6 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.layout.AnchorPane?>
 
-
 <AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ch.epfl.dedis.template.gui.Register.RegisterController">
    <children>
       <TextField fx:id="createUserText" layoutX="53.0" layoutY="107.0" prefHeight="27.0" prefWidth="238.0" promptText="User Name" />
@@ -24,5 +23,26 @@
       <Button fx:id="createReaderButton" layoutX="360.0" layoutY="222.0" mnemonicParsing="false" prefHeight="21.0" prefWidth="171.0" text="Create Reader" />
       <Button fx:id="createGarageButton" layoutX="360.0" layoutY="285.0" mnemonicParsing="false" prefHeight="21.0" prefWidth="171.0" text="Create Garage" />
       <MenuButton fx:id="chooseOwnerButton" layoutX="165.0" layoutY="161.0" mnemonicParsing="false" text="Choose Owner" />
+      <TextField fx:id="roleID" layoutX="441.0" layoutY="25.0" prefHeight="27.0" prefWidth="145.0" promptText="ID" />
+      <Label layoutX="54.0" layoutY="86.0" prefHeight="17.0" prefWidth="149.0" text="User Name:">
+         <font>
+            <Font name="Helvetica" size="13.0" />
+         </font>
+      </Label>
+      <Label layoutX="54.0" layoutY="266.0" prefHeight="17.0" prefWidth="149.0" text="Garage Mechanic Name:">
+         <font>
+            <Font name="Helvetica" size="13.0" />
+         </font>
+      </Label>
+      <Label layoutX="53.0" layoutY="204.0" prefHeight="17.0" prefWidth="149.0" text="Reader Name:">
+         <font>
+            <Font name="Helvetica" size="13.0" />
+         </font>
+      </Label>
+      <Label layoutX="55.0" layoutY="142.0" prefHeight="17.0" prefWidth="149.0" text="VIN">
+         <font>
+            <Font name="Helvetica" size="13.0" />
+         </font>
+      </Label>
    </children>
 </AnchorPane>

@@ -8,6 +8,7 @@ import ch.epfl.dedis.lib.darc.SignerEd25519;
 import ch.epfl.dedis.template.Car;
 import ch.epfl.dedis.template.CarInstance;
 import ch.epfl.dedis.template.gui.errorScene.ErrorSceneController;
+import ch.epfl.dedis.template.gui.index.IndexController;
 import ch.epfl.dedis.template.gui.index.Main;
 import ch.epfl.dedis.template.gui.json.CarJson;
 import ch.epfl.dedis.template.gui.json.Person;
@@ -57,6 +58,9 @@ public class RegisterController implements Initializable {
     private TextField createUserText;
 
     @FXML
+    private TextField roleID;
+
+    @FXML
     private MenuButton chooseOwnerButton;
 
     BooleanProperty disableUser = new SimpleBooleanProperty();
@@ -68,6 +72,8 @@ public class RegisterController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources){
+
+
 
         disableUser.bind(Bindings.createBooleanBinding(() ->
                 createUserText.getText().trim().isEmpty(), createUserText.textProperty()));
@@ -94,6 +100,7 @@ public class RegisterController implements Initializable {
         createGarageButton.setStyle("-fx-background-color: #001155; -fx-text-fill: white");
 
         try{
+            roleID.setText("ID: " + IndexController.role);
             //populate choose owner button
             File userFile = new File(homePath + "/json/user.json");
             if(userFile.exists())

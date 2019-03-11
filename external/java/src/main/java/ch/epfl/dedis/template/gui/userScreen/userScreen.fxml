@@ -16,5 +16,6 @@
       <ListView fx:id="garagesList" layoutX="398.0" layoutY="124.0" prefHeight="92.0" prefWidth="168.0" />
       <Label layoutX="259.0" layoutY="100.0" text="Readers" />
       <Label layoutX="456.0" layoutY="100.0" text="Garages" />
+      <TextField fx:id="roleID" layoutX="441.0" layoutY="25.0" prefHeight="27.0" prefWidth="145.0" promptText="ID" />
    </children>
 </AnchorPane>

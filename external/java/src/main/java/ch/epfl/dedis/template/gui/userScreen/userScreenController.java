@@ -44,6 +44,9 @@ public class userScreenController implements Initializable {
     private MenuButton chooseVinButton;
 
     @FXML
+    private TextField roleID;
+
+    @FXML
     private ListView<CheckBox> garagesList;
 
     @Override
@@ -54,6 +57,8 @@ public class userScreenController implements Initializable {
         garagesList.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
 
         try{
+
+            roleID.setText("ID: " + IndexController.role);
             ObjectMapper mapper = new ObjectMapper();
 
             File carFile = new File(homePath + "/json/car.json");

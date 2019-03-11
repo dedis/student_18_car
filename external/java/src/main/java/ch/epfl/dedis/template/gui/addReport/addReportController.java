@@ -54,6 +54,9 @@ public class addReportController implements Initializable {
     @FXML
     private ToggleGroup warranty;
 
+    @FXML
+    private TextField roleID;
+
     BooleanProperty disable = new SimpleBooleanProperty();
 
     @Override
@@ -65,6 +68,8 @@ public class addReportController implements Initializable {
                 notesTextArea.getText().trim().isEmpty(), notesTextArea.textProperty())));
 
         try{
+
+            roleID.setText("ID: " + IndexController.role);
             ObjectMapper mapper = new ObjectMapper();
 
             File carFile = new File(homePath + "/json/car.json");
@@ -129,14 +134,10 @@ public class addReportController implements Initializable {
             Main.window.setScene(Main.errorScene);
             e.printStackTrace();
         }
-
-
     }
 
     private void onVINChange(ActionEvent event) {
         String Identity = ((MenuItem) event.getTarget()).getText();
         chooseVINButton.setText(Identity);
     }
-
-
 }

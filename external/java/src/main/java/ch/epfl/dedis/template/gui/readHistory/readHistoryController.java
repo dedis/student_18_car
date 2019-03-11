@@ -44,6 +44,8 @@ public class readHistoryController implements Initializable {
     @FXML
     private Button goBackButton;
 
+    @FXML
+    private TextField roleID;
 
     @Override
     public void initialize(URL location, ResourceBundle resources){
@@ -53,7 +55,7 @@ public class readHistoryController implements Initializable {
 
         try{
             ObjectMapper mapper = new ObjectMapper();
-
+            roleID.setText("ID: " + IndexController.role);
             File carFile = new File(homePath + "/json/car.json");
             if(carFile.exists())
             {

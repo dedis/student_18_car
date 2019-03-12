@@ -1,10 +1,21 @@
-Simulation = "TemplateService"
-Servers = 8
+Simulation = "SimulationCarService"
+Servers = 2
 Bf = 4
-Rounds = 10
-CloseWait = 6000
+Rounds = 1
+RunWait = "6000s"
 Suite = "Ed25519"
+Bandwith = 100
+# Keep the different columns in case someboday wants to run another battery
+# of tests
 
-Depth
-1
-2
+Keep,   Transactions, BatchSize,  Hosts,  Delay, BlockInterval
+true,   1,            1,          5,      100,    "5s"
+true,   100,          5,          5,      100,    "5s"
+true,   200,          5,          5,      100,    "5s"
+true,   300,          5,          5,      100,    "5s"
+true,   400,          5,          5,      100,    "5s"
+true,   500,          5,          5,      100,    "5s"
+#true,   1000,         5,          5,      100,    "5s"
+#true,   10000,        5,          5,     100,      "5s"
+
+

@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dedis/student_18_car/protocol"
+	"github.com/dedis/cothority_template/protocol"
 	"github.com/dedis/kyber/suites"
 	"github.com/dedis/onet"
 	"github.com/dedis/onet/log"

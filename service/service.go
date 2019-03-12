@@ -11,8 +11,8 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/dedis/student_18_car"
-	"github.com/dedis/student_18_car/protocol"
+	"github.com/dedis/cothority_template"
+	"github.com/dedis/cothority_template/protocol"
 	"github.com/dedis/onet"
 	"github.com/dedis/onet/log"
 	"github.com/dedis/onet/network"

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.effect.*?>
+<?import javafx.scene.text.*?>
+<?import java.lang.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.layout.AnchorPane?>
+
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ch.epfl.dedis.template.gui.addReport.addReportController">
+   <children>
+      <TextField fx:id="scoreTextField" layoutX="41.0" layoutY="182.0" prefHeight="27.0" prefWidth="149.0" promptText="Eco Score" />
+      <Label layoutX="197.0" layoutY="42.0" text="Add a Report" textFill="#001155">
+         <font>
+            <Font size="24.0" />
+         </font>
+      </Label>
+      <TextField fx:id="mileageTextField" layoutX="41.0" layoutY="250.0" prefHeight="27.0" prefWidth="149.0" promptText="Mileage" />
+      <MenuButton fx:id="chooseVINButton" layoutX="41.0" layoutY="111.0" mnemonicParsing="false" prefHeight="27.0" prefWidth="149.0" text="Choose VIN" />
+      <TextArea fx:id="notesTextArea" layoutX="332.0" layoutY="140.0" prefHeight="203.0" prefWidth="200.0" promptText="Notes" />
+      <RadioButton layoutX="41.0" layoutY="323.0" mnemonicParsing="false" text="Yes">
+         <toggleGroup>
+            <ToggleGroup fx:id="warranty" />
+         </toggleGroup>
+      </RadioButton>
+      <RadioButton layoutX="145.0" layoutY="323.0" mnemonicParsing="false" text="No" toggleGroup="$warranty" />
+      <Label layoutX="42.0" layoutY="295.0" prefHeight="17.0" prefWidth="149.0" text="Warranty:">
+         <font>
+            <Font name="Helvetica" size="13.0" />
+         </font>
+      </Label>
+      <Button fx:id="submitButton" layoutX="242.0" layoutY="359.0" mnemonicParsing="false" text="Submit" textFill="#001155" />
+      <TextField fx:id="roleID" layoutX="441.0" layoutY="25.0" prefHeight="27.0" prefWidth="145.0" promptText="ID" />
+      <Label layoutX="43.0" layoutY="224.0" prefHeight="17.0" prefWidth="149.0" text="Mileage:">
+         <font>
+            <Font name="Helvetica" size="13.0" />
+         </font>
+      </Label>
+      <Label layoutX="43.0" layoutY="156.0" prefHeight="17.0" prefWidth="149.0" text="Eco Score:">
+         <font>
+            <Font name="Helvetica" size="13.0" />
+         </font>
+      </Label>
+      <Label layoutX="333.0" layoutY="111.0" prefHeight="17.0" prefWidth="149.0" text="Notes:">
+         <font>
+            <Font name="Helvetica" size="13.0" />
+         </font>
+      </Label>
+   </children>
+</AnchorPane>

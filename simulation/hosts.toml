@@ -1,0 +1,19 @@
+Simulation = "SimulationCarService"
+Servers = 2
+Bf = 4
+Rounds = 1
+RunWait = "6000s"
+Suite = "Ed25519"
+Bandwith = 100
+# Keep the different columns in case someboday wants to run another battery
+# of tests
+
+Keep,   Transactions, BatchSize,  Hosts,  Delay, BlockInterval
+true,   100,          5,          5,      30,    "5s"
+true,   100,          5,          10,     30,    "5s"
+true,   100,          5,          20,     30,    "5s"
+true,   100,          5,          40,     30,    "5s"
+#true,   100,          5,          100,      30,    "5s"
+#true,   100,          5,          1000,      10,    "5s"
+
+

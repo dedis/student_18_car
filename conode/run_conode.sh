@@ -18,8 +18,10 @@ VERSION_SUB="1"
 # increment version in onet if there's something that changes that needs
 # migration.
 ONET_PATH="$(go env GOPATH)/src/github.com/dedis/onet"
-VERSION_ONET=$( grep "const Version" $ONET_PATH/onet.go | sed -e "s/.* \"\(.*\)\"/\1/g" )
-VERSION="$VERSION_ONET-$VERSION_SUB"
+echo $ONET_PATH
+#VERSION_ONET=$( grep "const Version" $ONET_PATH/onet.go | sed -e "s/.* \"\(.*\)\"/\1/g" )
+#VERSION="$VERSION_ONET-$VERSION_SUB"
+VERSION="2.0-1"
 
 # TAGS should be passed in from the environment if you want to add extra
 # build tags to all calls to go. For example to turn on vartime algorithms:

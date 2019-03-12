@@ -3,7 +3,7 @@ package service
 import (
 	"testing"
 
-	"github.com/dedis/student_18_car"
+	"github.com/dedis/cothority_template"
 	"github.com/dedis/kyber/suites"
 	"github.com/dedis/onet"
 	"github.com/dedis/onet/log"

@@ -1,6 +1,6 @@
 package ch.epfl.dedis.integration;
 
-import ch.epfl.dedis.byzgen.OcsFactory;
+import ch.epfl.dedis.byzgen.CalypsoFactory;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
 
 
 public class ManualTestServerController extends TestServerController {
-    @Override
+    /*@Override
     public int countRunningConodes() throws IOException, InterruptedException {
         Process p = Runtime.getRuntime().exec("pgrep conode");
         int returnCode = p.waitFor();
@@ -20,7 +20,7 @@ public class ManualTestServerController extends TestServerController {
             throw new IllegalStateException("unable to count running conodes");
         }
         return countLines(inputStreamToString(p.getInputStream()));
-    }
+    }*/
 
     @Override
     public void startConode(int nodeNumber) throws InterruptedException, IOException {
@@ -43,12 +43,12 @@ public class ManualTestServerController extends TestServerController {
     }
 
     @Override
-    public List<OcsFactory.ConodeAddress> getConodes() {
+    public List<CalypsoFactory.ConodeAddress> getConodes() {
         return Arrays.asList(
-                new OcsFactory.ConodeAddress(buildURI("tcp://localhost:7002"), CONODE_PUB_1),
-                new OcsFactory.ConodeAddress(buildURI("tcp://localhost:7004"), CONODE_PUB_2),
-                new OcsFactory.ConodeAddress(buildURI("tcp://localhost:7006"), CONODE_PUB_3),
-                new OcsFactory.ConodeAddress(buildURI("tcp://localhost:7008"), CONODE_PUB_4));
+                new CalypsoFactory.ConodeAddress(buildURI("tcp://localhost:7002"), CONODE_PUB_1),
+                new CalypsoFactory.ConodeAddress(buildURI("tcp://localhost:7004"), CONODE_PUB_2),
+                new CalypsoFactory.ConodeAddress(buildURI("tcp://localhost:7006"), CONODE_PUB_3),
+                new CalypsoFactory.ConodeAddress(buildURI("tcp://localhost:7008"), CONODE_PUB_4));
     }
 
     private static int countLines(String str){

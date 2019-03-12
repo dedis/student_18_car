@@ -1,0 +1,27 @@
+syntax = "proto2";
+package car;
+
+option java_package = "ch.epfl.dedis.template.proto";
+option java_outer_classname = "CarProto";
+
+
+//todo Report.java
+message Report {
+  required string date = 1;
+  required string garageid = 2;
+  // todo there is an error when i run make proto
+  // WriteInstanceID byzcoin.InstanceID
+  required bytes writeinstanceid = 3;
+}
+//todo Car.java and CarInstance.java
+message Car {
+  required string vin = 1;
+  repeated Report reports = 2;
+}
+//todo SecretData.java
+message SecretData {
+  required string ecoscore = 1;
+  required string mileage = 2;
+  required bool warranty = 3;
+  required string checknote = 4;
+}
